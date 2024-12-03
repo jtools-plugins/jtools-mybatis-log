@@ -56,6 +56,7 @@ class StarterJavaProgramPatcher : JavaProgramPatcher() {
     }
 
     override fun patchJavaParameters(executor: Executor, configuration: RunProfile, javaParameters: JavaParameters) {
-        javaParameters.vmParametersList.add("-javaagent:${System.getProperty("user.home") + "/.jtools/jtools-mybatis-log/agent.jar"}")
+//        javaParameters.vmParametersList.add("-javaagent:${System.getProperty("user.home") + "/.jtools/jtools-mybatis-log/agent.jar"}")
+        javaParameters.vmParametersList.add("-javaagent:E:\\projects\\java\\jtools-mybatis-log\\agent\\target\\agent-1.0-SNAPSHOT.jar")
     }
 }

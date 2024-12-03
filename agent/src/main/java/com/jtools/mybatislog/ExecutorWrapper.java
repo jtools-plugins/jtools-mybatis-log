@@ -33,7 +33,7 @@ public class ExecutorWrapper implements Executor {
     }
 
 
-    public void showSql(MappedStatement statement, BoundSql boundSql, Object parameter) {
+    public String genSql(MappedStatement statement, BoundSql boundSql, Object parameter) {
         try {
             String sql = boundSql.getSql();
             ParameterHandler parameterHandler = configuration.newParameterHandler(statement, parameter, boundSql);
@@ -50,8 +50,8 @@ public class ExecutorWrapper implements Executor {
                 int idx = 0;
                 char[] charArray = sql.toCharArray();
                 for (char c : charArray) {
-                    if(c == '?'){
-                        idx ++;
+                    if (c == '?') {
+                        idx++;
                     }
                 }
                 mockPreparedStatement = new MockPreparedStatement(idx);
@@ -62,7 +62,11 @@ public class ExecutorWrapper implements Executor {
             int idx = 1;
             for (char c : charArray) {
                 if (c == '?') {
-                    sb.append(mockPreparedStatement.getParameters().get(idx++));
+                    if (mockPreparedStatement == null) {
+                        sb.append("NULL");
+                    } else {
+                        sb.append(mockPreparedStatement.getParameters().get(idx++));
+                    }
                 } else {
                     sb.append(c);
                 }
@@ -75,34 +79,60 @@ public class ExecutorWrapper implements Executor {
                     sb.append(page.getCurrent()).append(" , ").append(page.getSize());
                 }
             }
-            LOGGER.error("{}\r\n{}\r\n", statement.getId(), SqlFormatter.format(sb.toString()));
+            return SqlFormatter.format(sb.toString());
         } catch (Throwable e) {
-            e.printStackTrace();
+            LOGGER.error("gen sql failure,statement id: {}", statement.getId(), e);
+            return "";
+        }
+    }
+
+    @Override
+    public int update(MappedStatement ms, Object parameter) throws SQLException {
+        String sql = genSql(ms, ms.getBoundSql(parameter), parameter);
+        long startTime = System.currentTimeMillis();
+        try {
+            return executor.update(ms, parameter);
+        } finally {
+            long time = System.currentTimeMillis() - startTime;
+            LOGGER.info("{}\r\n{}\r\n执行耗时: {}ms",ms.getId(),sql,time);
         }
 
     }
 
     @Override
-    public int update(MappedStatement ms, Object parameter) throws SQLException {
-        showSql(ms, ms.getBoundSql(parameter), parameter);
-        return executor.update(ms, parameter);
-    }
-
-    @Override
     public <E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler, CacheKey cacheKey, BoundSql boundSql) throws SQLException {
-        showSql(ms, boundSql, parameter);
-        return executor.query(ms, parameter, rowBounds, resultHandler, cacheKey, boundSql);
+        String sql = genSql(ms, ms.getBoundSql(parameter), parameter);
+        long startTime = System.currentTimeMillis();
+        try {
+            return executor.query(ms, parameter, rowBounds, resultHandler, cacheKey, boundSql);
+        } finally {
+            long time = System.currentTimeMillis() - startTime;
+            LOGGER.info("{}\r\n{}\r\n执行耗时: {}ms",ms.getId(),sql,time);
+        }
     }
 
     @Override
     public <E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
-        showSql(ms, ms.getBoundSql(parameter), parameter);
-        return executor.query(ms, parameter, rowBounds, resultHandler);
+        String sql = genSql(ms, ms.getBoundSql(parameter), parameter);
+        long startTime = System.currentTimeMillis();
+        try {
+            return executor.query(ms, parameter, rowBounds, resultHandler);
+        } finally {
+            long time = System.currentTimeMillis() - startTime;
+            LOGGER.info("{}\r\n{}\r\n执行耗时: {}ms",ms.getId(),sql,time);
+        }
     }
 
     @Override
     public <E> Cursor<E> queryCursor(MappedStatement ms, Object parameter, RowBounds rowBounds) throws SQLException {
-        return executor.queryCursor(ms, parameter, rowBounds);
+        String sql = genSql(ms, ms.getBoundSql(parameter), parameter);
+        long startTime = System.currentTimeMillis();
+        try {
+            return executor.queryCursor(ms, parameter, rowBounds);
+        } finally {
+            long time = System.currentTimeMillis() - startTime;
+            LOGGER.info("{}\r\n{}\r\n执行耗时: {}ms",ms.getId(),sql,time);
+        }
     }
 
     @Override
