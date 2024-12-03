@@ -1,0 +1,1 @@
+com.jtools.mybatislog.PluginImpl
