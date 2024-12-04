@@ -1,6 +1,7 @@
 package com.jtools.mybatislog;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.github.pagehelper.PageHelper;
 import com.github.vertical_blank.sqlformatter.SqlFormatter;
 import org.apache.ibatis.cache.CacheKey;
 import org.apache.ibatis.cursor.Cursor;
@@ -56,6 +57,16 @@ public class ExecutorWrapper implements Executor {
                 }
                 mockPreparedStatement = new MockPreparedStatement(idx);
                 parameterHandler.setParameters(mockPreparedStatement);
+            }else {
+                int idx = 0;
+                char[] charArray = sql.toCharArray();
+                for (char c : charArray) {
+                    if (c == '?') {
+                        idx++;
+                    }
+                }
+                mockPreparedStatement = new MockPreparedStatement(idx);
+                parameterHandler.setParameters(mockPreparedStatement);
             }
             StringBuilder sb = new StringBuilder();
             char[] charArray = sql.toCharArray();
@@ -76,9 +87,20 @@ public class ExecutorWrapper implements Executor {
                 if (page.getCurrent() <= 1) {
                     sb.append(page.getSize());
                 } else {
-                    sb.append(page.getCurrent()).append(" , ").append(page.getSize());
+                    sb.append((page.getCurrent() - 1) * page.getSize()).append(" , ").append(page.getSize());
                 }
             }
+
+            com.github.pagehelper.Page<Object> localPage = PageHelper.getLocalPage();
+            if(localPage != null && localPage.getPageSize() > 0){
+                sb.append(" LIMIT ");
+                if (localPage.getPageNum() <= 1) {
+                    sb.append(localPage.getPageSize());
+                } else {
+                    sb.append((localPage.getPageNum() - 1) * localPage.getPageSize()).append(" , ").append(localPage.getPageSize());
+                }
+            }
+
             return SqlFormatter.format(sb.toString());
         } catch (Throwable e) {
             LOGGER.error("gen sql failure,statement id: {}", statement.getId(), e);
@@ -94,7 +116,7 @@ public class ExecutorWrapper implements Executor {
             return executor.update(ms, parameter);
         } finally {
             long time = System.currentTimeMillis() - startTime;
-            LOGGER.info("{}\r\n{}\r\n执行耗时: {}ms",ms.getId(),sql,time);
+            LOGGER.info("{}\r\n\u001B[31m{}\u001B[0m\r\n执行耗时: {}ms",ms.getId(),sql,time);
         }
 
     }
@@ -107,7 +129,7 @@ public class ExecutorWrapper implements Executor {
             return executor.query(ms, parameter, rowBounds, resultHandler, cacheKey, boundSql);
         } finally {
             long time = System.currentTimeMillis() - startTime;
-            LOGGER.info("{}\r\n{}\r\n执行耗时: {}ms",ms.getId(),sql,time);
+            LOGGER.info("{}\r\n\u001B[31m{}\u001B[0m\r\n执行耗时: {}ms",ms.getId(),sql,time);
         }
     }
 
@@ -119,7 +141,7 @@ public class ExecutorWrapper implements Executor {
             return executor.query(ms, parameter, rowBounds, resultHandler);
         } finally {
             long time = System.currentTimeMillis() - startTime;
-            LOGGER.info("{}\r\n{}\r\n执行耗时: {}ms",ms.getId(),sql,time);
+            LOGGER.info("{}\r\n\u001B[31m{}\u001B[0m\r\n执行耗时: {}ms",ms.getId(),sql,time);
         }
     }
 
@@ -131,7 +153,7 @@ public class ExecutorWrapper implements Executor {
             return executor.queryCursor(ms, parameter, rowBounds);
         } finally {
             long time = System.currentTimeMillis() - startTime;
-            LOGGER.info("{}\r\n{}\r\n执行耗时: {}ms",ms.getId(),sql,time);
+            LOGGER.info("{}\r\n\u001B[31m{}\u001B[0m\r\n执行耗时: {}ms",ms.getId(),sql,time);
         }
     }
 
