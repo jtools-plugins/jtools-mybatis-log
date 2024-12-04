@@ -39,71 +39,71 @@ public class ExecutorWrapper implements Executor {
             String sql = boundSql.getSql();
             ParameterHandler parameterHandler = configuration.newParameterHandler(statement, parameter, boundSql);
             MockPreparedStatement mockPreparedStatement = null;
-            Page<?> page = null;
-            if (parameter instanceof Map) {
-                Map<?, ?> param = (Map<?, ?>) parameter;
-                if (param.containsKey("page")) {
-                    Object p = param.get("page");
-                    if (p instanceof Page) {
-                        page = (Page<?>) p;
-                    }
-                }
-                int idx = 0;
-                char[] charArray = sql.toCharArray();
-                for (char c : charArray) {
-                    if (c == '?') {
-                        idx++;
-                    }
-                }
-                mockPreparedStatement = new MockPreparedStatement(idx);
-                parameterHandler.setParameters(mockPreparedStatement);
-            }else {
-                int idx = 0;
-                char[] charArray = sql.toCharArray();
-                for (char c : charArray) {
-                    if (c == '?') {
-                        idx++;
-                    }
-                }
-                mockPreparedStatement = new MockPreparedStatement(idx);
-                parameterHandler.setParameters(mockPreparedStatement);
-            }
             StringBuilder sb = new StringBuilder();
             char[] charArray = sql.toCharArray();
-            int idx = 1;
+            int idx = 0;
             for (char c : charArray) {
                 if (c == '?') {
-                    if (mockPreparedStatement == null) {
-                        sb.append("NULL");
-                    } else {
-                        sb.append(mockPreparedStatement.getParameters().get(idx++));
-                    }
+                    idx++;
+                }
+            }
+            mockPreparedStatement = new MockPreparedStatement(idx);
+            parameterHandler.setParameters(mockPreparedStatement);
+            idx = 1;
+            for (char c : charArray) {
+                if (c == '?') {
+                    sb.append(mockPreparedStatement.getParameters().get(idx++));
                 } else {
                     sb.append(c);
                 }
             }
-            if (page != null) {
-                sb.append(" LIMIT ");
-                if (page.getCurrent() <= 1) {
-                    sb.append(page.getSize());
-                } else {
-                    sb.append((page.getCurrent() - 1) * page.getSize()).append(" , ").append(page.getSize());
+
+            try {
+                Page<?> page = null;
+                if (parameter instanceof Map) {
+                    Map<?, ?> param = (Map<?, ?>) parameter;
+                    if (param.containsKey("page")) {
+                        Object p = param.get("page");
+                        if (p instanceof Page) {
+                            page = (Page<?>) p;
+                        }
+                    }
+                } else if (parameter instanceof Page) {
+                    page = (Page<?>) parameter;
                 }
+                if (page != null) {
+                    sb.append(" LIMIT ");
+                    if (page.getCurrent() <= 1) {
+                        sb.append(page.getSize());
+                    } else {
+                        sb.append((page.getCurrent() - 1) * page.getSize()).append(" , ").append(page.getSize());
+                    }
+                }
+
+            } catch (Throwable ignore) {
+
             }
 
-            com.github.pagehelper.Page<Object> localPage = PageHelper.getLocalPage();
-            if(localPage != null && localPage.getPageSize() > 0){
-                sb.append(" LIMIT ");
-                if (localPage.getPageNum() <= 1) {
-                    sb.append(localPage.getPageSize());
-                } else {
-                    sb.append((localPage.getPageNum() - 1) * localPage.getPageSize()).append(" , ").append(localPage.getPageSize());
+            try {
+                com.github.pagehelper.Page<Object> localPage = PageHelper.getLocalPage();
+                if (localPage != null && localPage.getPageSize() > 0) {
+                    sb.append(" LIMIT ");
+                    if (localPage.getPageNum() <= 1) {
+                        sb.append(localPage.getPageSize());
+                    } else {
+                        sb.append((localPage.getPageNum() - 1) * localPage.getPageSize()).append(" , ").append(localPage.getPageSize());
+                    }
                 }
-            }
+            } catch (Throwable ignore) {
 
+            }
             return SqlFormatter.format(sb.toString());
         } catch (Throwable e) {
-            LOGGER.error("gen sql failure,statement id: {}", statement.getId(), e);
+            try {
+                LOGGER.error("gen sql failure,statement id: {}", statement.getId(), e);
+            } catch (Throwable err) {
+                System.out.printf("gen sql failure,statement id: %s,error: %s", statement.getId(), e);
+            }
             return "";
         }
     }
@@ -116,9 +116,17 @@ public class ExecutorWrapper implements Executor {
             return executor.update(ms, parameter);
         } finally {
             long time = System.currentTimeMillis() - startTime;
-            LOGGER.info("{}\r\n\u001B[31m{}\u001B[0m\r\n执行耗时: {}ms",ms.getId(),sql,time);
+            log(ms.getId(), sql, time);
         }
 
+    }
+
+    private void log(String id, String sql, long time) {
+        try {
+            LOGGER.info("{}\r\n\u001B[31m{}\u001B[0m\r\n执行耗时: {}ms", id, sql, time);
+        } catch (Throwable e) {
+            System.out.printf("%s\r\n\u001B[31m%s\u001B[0m\r\n执行耗时: %sms", id, sql, time);
+        }
     }
 
     @Override
@@ -129,7 +137,7 @@ public class ExecutorWrapper implements Executor {
             return executor.query(ms, parameter, rowBounds, resultHandler, cacheKey, boundSql);
         } finally {
             long time = System.currentTimeMillis() - startTime;
-            LOGGER.info("{}\r\n\u001B[31m{}\u001B[0m\r\n执行耗时: {}ms",ms.getId(),sql,time);
+            log(ms.getId(), sql, time);
         }
     }
 
@@ -141,7 +149,7 @@ public class ExecutorWrapper implements Executor {
             return executor.query(ms, parameter, rowBounds, resultHandler);
         } finally {
             long time = System.currentTimeMillis() - startTime;
-            LOGGER.info("{}\r\n\u001B[31m{}\u001B[0m\r\n执行耗时: {}ms",ms.getId(),sql,time);
+            log(ms.getId(), sql, time);
         }
     }
 
@@ -153,7 +161,7 @@ public class ExecutorWrapper implements Executor {
             return executor.queryCursor(ms, parameter, rowBounds);
         } finally {
             long time = System.currentTimeMillis() - startTime;
-            LOGGER.info("{}\r\n\u001B[31m{}\u001B[0m\r\n执行耗时: {}ms",ms.getId(),sql,time);
+            log(ms.getId(), sql, time);
         }
     }
 

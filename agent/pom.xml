@@ -27,6 +27,7 @@
             <groupId>com.github.pagehelper</groupId>
             <artifactId>pagehelper</artifactId>
             <version>6.1.0</version>
+            <optional>true</optional>
         </dependency>
 
 
@@ -41,12 +42,14 @@
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus</artifactId>
             <version>3.5.6</version>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>1.7.36</version>
+            <optional>true</optional>
         </dependency>
 
     </dependencies>
@@ -67,6 +70,11 @@
                             <artifactSet>
                                 <excludes>
                                     <exclude>org.springframework:*</exclude>
+                                    <exclude>com.baomidou:*</exclude>
+                                    <exclude>com.github.jsqlparser:*</exclude>
+                                    <exclude>com.github.pagehelper:*</exclude>
+                                    <exclude>org.mybatis:*</exclude>
+                                    <exclude>org.slf4j:*</exclude>
                                 </excludes>
                             </artifactSet>
                             <transformers>
