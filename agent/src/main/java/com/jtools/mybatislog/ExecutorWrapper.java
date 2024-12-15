@@ -3,6 +3,7 @@ package com.jtools.mybatislog;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.pagehelper.PageHelper;
 import com.github.vertical_blank.sqlformatter.SqlFormatter;
+import com.github.vertical_blank.sqlformatter.languages.Dialect;
 import org.apache.ibatis.cache.CacheKey;
 import org.apache.ibatis.cursor.Cursor;
 import org.apache.ibatis.executor.BatchResult;
@@ -97,7 +98,7 @@ public class ExecutorWrapper implements Executor {
             } catch (Throwable ignore) {
 
             }
-            return SqlFormatter.format(sb.toString());
+            return SqlFormatter.of(Dialect.MySql).format(sb.toString());
         } catch (Throwable e) {
             try {
                 LOGGER.error("gen sql failure,statement id: {}", statement.getId(), e);
