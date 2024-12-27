@@ -56,7 +56,7 @@ public class JtoolsAgent {
                         for (CtMethod method : methods) {
                             if ("newExecutor".equals(method.getName()) && method.getReturnType().getName().equals("org.apache.ibatis.executor.Executor")) {
                                 CtMethod methodCopy = CtNewMethod.copy(method, ctClass, new ClassMap());
-                                String agentMethodName = method.getName() + "$agent";
+                                String agentMethodName = method.getName() + "$agent$" + ctClass.getName().replace(".","$");
                                 method.setName(agentMethodName);
                                 methodCopy.setBody(String.format("{\n return ($r)new com.jtools.mybatislog.ExecutorWrapper($0,%s($$),\"%s\");\n}", agentMethodName, sqlType));
                                 ctClass.addMethod(methodCopy);

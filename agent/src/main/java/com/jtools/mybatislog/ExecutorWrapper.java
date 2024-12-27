@@ -100,7 +100,7 @@ public class ExecutorWrapper implements Executor {
             } catch (Throwable ignore) {
 
             }
-            return SqlFormatter.of(Dialect.valueOf(sqlFormatType)).format(sb.toString());
+            return SqlFormatter.of(Dialect.nameOf(sqlFormatType).orElse(Dialect.MySql)).format(sb.toString());
         } catch (Throwable e) {
             try {
                 LOGGER.error("gen sql failure,statement id: {}", statement.getId(), e);
