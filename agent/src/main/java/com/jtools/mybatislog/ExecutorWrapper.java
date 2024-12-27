@@ -28,10 +28,12 @@ public class ExecutorWrapper implements Executor {
     private final Configuration configuration;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecutorWrapper.class);
+    private final String sqlFormatType;
 
-    public ExecutorWrapper(Configuration configuration, Executor result) {
+    public ExecutorWrapper(Configuration configuration, Executor result, String sqlFormatType) {
         this.executor = result;
         this.configuration = configuration;
+        this.sqlFormatType = sqlFormatType;
     }
 
 
@@ -98,7 +100,7 @@ public class ExecutorWrapper implements Executor {
             } catch (Throwable ignore) {
 
             }
-            return SqlFormatter.of(Dialect.MySql).format(sb.toString());
+            return SqlFormatter.of(Dialect.valueOf(sqlFormatType)).format(sb.toString());
         } catch (Throwable e) {
             try {
                 LOGGER.error("gen sql failure,statement id: {}", statement.getId(), e);

@@ -2,6 +2,7 @@ package com.jtools.mybatislog
 
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.JavaParameters
+import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.execution.configurations.RunProfile
 import com.intellij.execution.runners.JavaProgramPatcher
 import com.intellij.openapi.application.ApplicationManager
@@ -56,7 +57,16 @@ class StarterJavaProgramPatcher : JavaProgramPatcher() {
     }
 
     override fun patchJavaParameters(executor: Executor, configuration: RunProfile, javaParameters: JavaParameters) {
-        javaParameters.vmParametersList.add("-javaagent:${System.getProperty("user.home") + "/.jtools/jtools-mybatis-log/agent.jar"}")
+        if (configuration is RunConfiguration) {
+            val state = SupportState.getInstance(configuration.project)
+            javaParameters.vmParametersList.add(
+                "-javaagent:${System.getProperty("user.home")}/.jtools/jtools-mybatis-log/agent.jar=${state.sqlFormatType}=${
+                    state.supportClasses.split(
+                        "\n"
+                    ).joinToString(",") { it.trim() }
+                }"
+            )
+        }
 //        javaParameters.vmParametersList.add("-javaagent:E:\\projects\\java\\jtools-mybatis-log\\agent\\target\\agent-1.0-SNAPSHOT.jar")
     }
 }
