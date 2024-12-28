@@ -6,25 +6,26 @@ import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
 import java.security.ProtectionDomain;
-import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class JtoolsAgent {
+
+    private static final Set<String> ENHANCES = new HashSet<>();
+
+    static {
+        ENHANCES.add("org/apache/ibatis/session/Configuration");
+        ENHANCES.add("com/baomidou/mybatisplus/core/MybatisConfiguration");
+    }
+
     public static void premain(String args, Instrumentation inst) {
         try {
-            String[] split = args.split("=");
-            String sqlType = split[0];
-            Set<String> enhances = Arrays.stream(split[1].split(","))
-                    .map(item -> item.replace(".", "/").trim())
-                    .filter(item -> !item.isEmpty())
-                    .collect(Collectors.toSet());
             inst.addTransformer(new ClassFileTransformer() {
                 @Override
                 public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
                     try {
-                        if (enhances.contains(className)) {
-                            return enhance(loader, className, sqlType);
+                        if (ENHANCES.contains(className)) {
+                            return enhance(loader, className, "Mysql");
                         }
                     } catch (Throwable ignore) {
 
@@ -56,7 +57,7 @@ public class JtoolsAgent {
                         for (CtMethod method : methods) {
                             if ("newExecutor".equals(method.getName()) && method.getReturnType().getName().equals("org.apache.ibatis.executor.Executor")) {
                                 CtMethod methodCopy = CtNewMethod.copy(method, ctClass, new ClassMap());
-                                String agentMethodName = method.getName() + "$agent$" + ctClass.getName().replace(".","$");
+                                String agentMethodName = method.getName() + "$agent$" + ctClass.getName().replace(".", "$");
                                 method.setName(agentMethodName);
                                 methodCopy.setBody(String.format("{\n return ($r)new com.jtools.mybatislog.ExecutorWrapper($0,%s($$),\"%s\");\n}", agentMethodName, sqlType));
                                 ctClass.addMethod(methodCopy);

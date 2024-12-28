@@ -58,15 +58,11 @@ class StarterJavaProgramPatcher : JavaProgramPatcher() {
 
     override fun patchJavaParameters(executor: Executor, configuration: RunProfile, javaParameters: JavaParameters) {
         if (configuration is RunConfiguration) {
-            val state = SupportState.getInstance(configuration.project)
-            javaParameters.vmParametersList.add(
-                "-javaagent:${System.getProperty("user.home")}/.jtools/jtools-mybatis-log/agent.jar=${state.sqlFormatType}=${
-                    state.supportClasses.split(
-                        "\n"
-                    ).joinToString(",") { it.trim() }
-                }"
-            )
+//            javaParameters.vmParametersList.add(
+//                "-javaagent:${System.getProperty("user.home")}/.jtools/jtools-mybatis-log/agent.jar"
+//            )
+            javaParameters.vmParametersList.add("-javaagent:E:\\projects\\java\\jtools-mybatis-log\\agent\\target\\agent-1.0-SNAPSHOT.jar")
         }
-//        javaParameters.vmParametersList.add("-javaagent:E:\\projects\\java\\jtools-mybatis-log\\agent\\target\\agent-1.0-SNAPSHOT.jar")
+
     }
 }

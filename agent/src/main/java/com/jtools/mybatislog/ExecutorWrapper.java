@@ -113,6 +113,9 @@ public class ExecutorWrapper implements Executor {
 
     @Override
     public int update(MappedStatement ms, Object parameter) throws SQLException {
+        if(executor instanceof ExecutorWrapper){
+            return executor.update(ms,parameter);
+        }
         String sql = genSql(ms, ms.getBoundSql(parameter), parameter);
         long startTime = System.currentTimeMillis();
         try {
@@ -134,6 +137,9 @@ public class ExecutorWrapper implements Executor {
 
     @Override
     public <E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler, CacheKey cacheKey, BoundSql boundSql) throws SQLException {
+        if(executor instanceof ExecutorWrapper){
+            return executor.query(ms, parameter, rowBounds, resultHandler, cacheKey, boundSql);
+        }
         String sql = genSql(ms, ms.getBoundSql(parameter), parameter);
         long startTime = System.currentTimeMillis();
         try {
@@ -146,6 +152,9 @@ public class ExecutorWrapper implements Executor {
 
     @Override
     public <E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
+        if(executor instanceof ExecutorWrapper){
+            return executor.query(ms, parameter, rowBounds, resultHandler);
+        }
         String sql = genSql(ms, ms.getBoundSql(parameter), parameter);
         long startTime = System.currentTimeMillis();
         try {
@@ -158,6 +167,9 @@ public class ExecutorWrapper implements Executor {
 
     @Override
     public <E> Cursor<E> queryCursor(MappedStatement ms, Object parameter, RowBounds rowBounds) throws SQLException {
+        if(executor instanceof ExecutorWrapper){
+            return executor.queryCursor(ms, parameter, rowBounds);
+        }
         String sql = genSql(ms, ms.getBoundSql(parameter), parameter);
         long startTime = System.currentTimeMillis();
         try {
