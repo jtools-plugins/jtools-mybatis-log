@@ -17,9 +17,14 @@ public class JtoolsAgent {
         ENHANCES.add("org/apache/ibatis/session/Configuration");
         ENHANCES.add("com/baomidou/mybatisplus/core/MybatisConfiguration");
     }
-
     public static void premain(String args, Instrumentation inst) {
         try {
+            String[] parameters = args.split(",");
+            boolean enabled = Boolean.parseBoolean(parameters[0]);
+            if(!enabled){
+                return ;
+            }
+            String ansiCode = parameters[1];
             inst.addTransformer(new ClassFileTransformer() {
                 @Override
                 public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
@@ -59,7 +64,7 @@ public class JtoolsAgent {
                                 CtMethod methodCopy = CtNewMethod.copy(method, ctClass, new ClassMap());
                                 String agentMethodName = method.getName() + "$agent$" + ctClass.getName().replace(".", "$");
                                 method.setName(agentMethodName);
-                                methodCopy.setBody(String.format("{\n return ($r)new com.jtools.mybatislog.ExecutorWrapper($0,%s($$),\"%s\");\n}", agentMethodName, sqlType));
+                                methodCopy.setBody(String.format("{\n return ($r)new com.jtools.mybatislog.ExecutorWrapper($0,%s($$),\"%s\",\"%s\");\n}", agentMethodName, sqlType,ansiCode));
                                 ctClass.addMethod(methodCopy);
                             }
                         }

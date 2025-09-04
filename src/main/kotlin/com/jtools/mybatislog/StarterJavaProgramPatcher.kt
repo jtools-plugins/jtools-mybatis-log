@@ -58,10 +58,12 @@ class StarterJavaProgramPatcher : JavaProgramPatcher() {
 
     override fun patchJavaParameters(executor: Executor, configuration: RunProfile, javaParameters: JavaParameters) {
         if (configuration is RunConfiguration) {
+            val color = configuration.project.getUserData(PluginImpl.COLOR_KEY)
+            val enabled = configuration.project.getUserData(PluginImpl.ENABLE_KEY)
             javaParameters.vmParametersList.add(
-                "-javaagent:${System.getProperty("user.home")}/.jtools/jtools-mybatis-log/agent.jar"
+                "-javaagent:${System.getProperty("user.home")}/.jtools/jtools-mybatis-log/agent.jar=${enabled},${color}"
             )
-//            javaParameters.vmParametersList.add("-javaagent:E:\\projects\\java\\jtools-mybatis-log\\agent\\target\\agent-1.0-SNAPSHOT.jar")
+//            javaParameters.vmParametersList.add("-javaagent:D:\\projects\\java\\jtools-mybatis-log\\agent\\target\\agent-1.0-SNAPSHOT.jar=${enabled},${color}")
         }
 
     }
