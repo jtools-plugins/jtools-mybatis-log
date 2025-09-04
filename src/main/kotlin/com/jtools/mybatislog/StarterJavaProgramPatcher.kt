@@ -21,7 +21,7 @@ class StarterJavaProgramPatcher : JavaProgramPatcher() {
             val jar =
                 StarterJavaProgramPatcher::class.java.classLoader.getResourceAsStream("META-INF/agent.jar")
             jar?.use {
-                val bytes = it.readAllBytes()
+                val bytes = it.readBytes()
                 val dir = System.getProperty("user.home") + "/.jtools/jtools-mybatis-log"
                 File(dir).apply {
                     if (!this.exists()) {
@@ -58,10 +58,10 @@ class StarterJavaProgramPatcher : JavaProgramPatcher() {
 
     override fun patchJavaParameters(executor: Executor, configuration: RunProfile, javaParameters: JavaParameters) {
         if (configuration is RunConfiguration) {
-//            javaParameters.vmParametersList.add(
-//                "-javaagent:${System.getProperty("user.home")}/.jtools/jtools-mybatis-log/agent.jar"
-//            )
-            javaParameters.vmParametersList.add("-javaagent:E:\\projects\\java\\jtools-mybatis-log\\agent\\target\\agent-1.0-SNAPSHOT.jar")
+            javaParameters.vmParametersList.add(
+                "-javaagent:${System.getProperty("user.home")}/.jtools/jtools-mybatis-log/agent.jar"
+            )
+//            javaParameters.vmParametersList.add("-javaagent:E:\\projects\\java\\jtools-mybatis-log\\agent\\target\\agent-1.0-SNAPSHOT.jar")
         }
 
     }
