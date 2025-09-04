@@ -1,7 +1,7 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin package="com.jtools.mybatislog" require-restart="true">
     <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
-    <id>com.jtools.mybatislog.jtools-mybatis-log</id>
+    <id>com.jtools.mybatis.log.jtools-mybatis-log</id>
 
     <!-- Public plugin name should be written in Title Case.
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
@@ -28,7 +28,7 @@
             <ul>
                 <li>兼容低版本mybatis-plus</li>
             </ul>
-            <h2>Version v1.0.2</h2>
+            <h2>Version v1.0.3</h2>
             <ul>
                 <li>兼容2025.2以上版本</li>
                 <li>新增设置选项: Main Menu => Settings => Other Settings => JToolsMybatisLog</li>
