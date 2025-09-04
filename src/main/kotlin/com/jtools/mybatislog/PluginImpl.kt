@@ -3,12 +3,10 @@ package com.jtools.mybatislog
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.util.IconLoader
-import com.intellij.openapi.util.Key
 import com.intellij.ui.ColorPanel
 import com.intellij.ui.Gray
 import com.intellij.ui.components.JBCheckBox
 import com.lhstack.tools.plugins.IPlugin
-import com.lhstack.tools.plugins.Logger
 import org.jdesktop.swingx.HorizontalLayout
 import org.jdesktop.swingx.VerticalLayout
 import java.awt.BorderLayout
@@ -24,10 +22,6 @@ class PluginImpl : IPlugin {
         val ansiColorMap = mutableMapOf<String, String>()
 
         val colorMap = mutableMapOf<String, Color>()
-
-        val COLOR_KEY = Key.create<String>("JTools:MybatisLogColor")
-
-        val ENABLE_KEY = Key.create<Boolean>("JTools:MybatisLogEnabled")
 
         val componentCache = mutableMapOf<String, JComponent>()
 
@@ -81,40 +75,34 @@ class PluginImpl : IPlugin {
         StarterJavaProgramPatcher.unRegistry()
     }
 
-    override fun openProject(project: Project, logger: Logger?, openThisPage: Runnable?) {
-        project.putUserData(ENABLE_KEY, true)
-        project.putUserData(COLOR_KEY,ansiColorMap["亮绿色"])
-    }
 
     override fun createPanel(project: Project): JComponent = componentCache.computeIfAbsent(project.locationHash) {
         JPanel(VerticalLayout()).also {
             it.add(JPanel(BorderLayout()).apply {
                 this.add(JLabel("开启Sql日志控制台输出: ", JLabel.LEFT), BorderLayout.WEST)
                 this.add(JBCheckBox().apply {
-                    this.isSelected = true
-                    project.putUserData(ENABLE_KEY, true)
+                    this.isSelected = PluginState.getInstance(project).enabled
                     this.addActionListener {
-                        project.putUserData(ENABLE_KEY, this.isSelected)
+                        PluginState.getInstance(project).enabled = this.isSelected
                     }
                 }, BorderLayout.CENTER)
             })
             it.add(JPanel(BorderLayout()).apply {
-                this.add(JLabel("控制台日志颜色: ", JLabel.LEFT),BorderLayout.WEST)
+                this.add(JLabel("控制台日志颜色: ", JLabel.LEFT), BorderLayout.WEST)
                 this.add(JPanel(HorizontalLayout()).apply {
                     val colorPanel = ColorPanel().apply {
-                        this.selectedColor = colorMap[ansiColorMap["亮绿色"]]
-                        project.putUserData(COLOR_KEY,ansiColorMap["亮绿色"])
+                        this.selectedColor = colorMap[PluginState.getInstance(project).ansiCode]
                     }
                     val comboBox = ComboBox<String>(ansiColorMap.keys.toTypedArray())
-                    comboBox.selectedItem = "亮绿色"
+                    comboBox.selectedItem = PluginState.getInstance(project).colorName
                     comboBox.addItemListener { e ->
+                        PluginState.getInstance(project).colorName = e.item as String
                         colorPanel.selectedColor = colorMap[ansiColorMap[e.item as String]]
-                        project.putUserData(COLOR_KEY,ansiColorMap[e.item as String])
+                        PluginState.getInstance(project).ansiCode = ansiColorMap[e.item as String]!!
                     }
-                    this.add(comboBox,BorderLayout.WEST)
-                    this.add(colorPanel,BorderLayout.NORTH)
+                    this.add(comboBox, BorderLayout.WEST)
+                    this.add(colorPanel, BorderLayout.NORTH)
                 }, BorderLayout.CENTER)
-//            this.add(, BorderLayout.CENTER)
             })
         }
     }
@@ -123,6 +111,8 @@ class PluginImpl : IPlugin {
         super.closePanel(project, pluginPanel)
         componentCache.remove(project.locationHash)
     }
+
+    override fun installRestart(): Boolean = true
 
     override fun support(jToolsVersion: Int): Boolean = jToolsVersion >= 103
 
