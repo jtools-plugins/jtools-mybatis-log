@@ -1,20 +1,13 @@
 package com.jtools.mybatislog
 
+
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.util.IconLoader
-import com.intellij.ui.ColorPanel
 import com.intellij.ui.Gray
-import com.intellij.ui.components.JBCheckBox
 import com.lhstack.tools.plugins.IPlugin
-import org.jdesktop.swingx.HorizontalLayout
-import org.jdesktop.swingx.VerticalLayout
-import java.awt.BorderLayout
 import java.awt.Color
 import javax.swing.Icon
 import javax.swing.JComponent
-import javax.swing.JLabel
-import javax.swing.JPanel
 
 class PluginImpl : IPlugin {
 
@@ -77,34 +70,7 @@ class PluginImpl : IPlugin {
 
 
     override fun createPanel(project: Project): JComponent = componentCache.computeIfAbsent(project.locationHash) {
-        JPanel(VerticalLayout()).also {
-            it.add(JPanel(BorderLayout()).apply {
-                this.add(JLabel("开启Sql日志控制台输出: ", JLabel.LEFT), BorderLayout.WEST)
-                this.add(JBCheckBox().apply {
-                    this.isSelected = PluginState.getInstance(project).enabled
-                    this.addActionListener {
-                        PluginState.getInstance(project).enabled = this.isSelected
-                    }
-                }, BorderLayout.CENTER)
-            })
-            it.add(JPanel(BorderLayout()).apply {
-                this.add(JLabel("控制台日志颜色: ", JLabel.LEFT), BorderLayout.WEST)
-                this.add(JPanel(HorizontalLayout()).apply {
-                    val colorPanel = ColorPanel().apply {
-                        this.selectedColor = colorMap[PluginState.getInstance(project).ansiCode]
-                    }
-                    val comboBox = ComboBox<String>(ansiColorMap.keys.toTypedArray())
-                    comboBox.selectedItem = PluginState.getInstance(project).colorName
-                    comboBox.addItemListener { e ->
-                        PluginState.getInstance(project).colorName = e.item as String
-                        colorPanel.selectedColor = colorMap[ansiColorMap[e.item as String]]
-                        PluginState.getInstance(project).ansiCode = ansiColorMap[e.item as String]!!
-                    }
-                    this.add(comboBox, BorderLayout.WEST)
-                    this.add(colorPanel, BorderLayout.NORTH)
-                }, BorderLayout.CENTER)
-            })
-        }
+        SettingPanel(project, PluginState.getInstance(project))
     }
 
     override fun closePanel(project: Project, pluginPanel: JComponent) {

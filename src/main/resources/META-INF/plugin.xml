@@ -1,0 +1,54 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin package="com.jtools.mybatislog" require-restart="true">
+    <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
+    <id>com.jtools.mybatislog.jtools-mybatis-log</id>
+
+    <!-- Public plugin name should be written in Title Case.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
+    <name>Jtools-Mybatis-Log</name>
+
+
+    <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
+    <vendor email="lhstack@foxmail.com" url="https://github.com/jtools-plugins">lhstack</vendor>
+
+    <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
+         Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
+    <description><![CDATA[
+    <p>1. This plugin can print the complete log and sql execution time of any project that uses mybatis,mybatis-plus.</p>
+    <p>2. You just need to install it, and it will do the work of extracting sql and concatenating parameters for you.</p>
+    <p>3. I think this plugin can help you solve a lot of problems, you will like this plugin.</p>
+    <p>1. 这个插件可以打印完整的日志和sql执行时间的任何项目，使用mybatis，mybatis-plus。</p>
+    <p>2. 您只需要安装它，它就会为您完成提取sql和拼接参数的工作。</p>
+    <p>3. 我觉得这个插件可以帮你解决很多问题，你会喜欢这个插件的。</p>
+  ]]></description>
+
+    <change-notes><![CDATA[
+            <h2>Version v1.0.1</h2>
+            <ul>
+                <li>兼容低版本mybatis-plus</li>
+            </ul>
+            <h2>Version v1.0.2</h2>
+            <ul>
+                <li>兼容2025.2以上版本</li>
+                <li>新增设置选项: Main Menu => Settings => Other Settings => JToolsMybatisLog</li>
+            </ul>
+    ]]></change-notes>
+    <idea-version since-build="223.*" until-build="252.*" />
+    <!-- Product and plugin compatibility requirements.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+    <!-- Extension points defined by the plugin.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+    <extensions defaultExtensionNs="com.intellij">
+        <projectConfigurable instance="com.jtools.mybatislog.JToolsMybatisLogConfigurable"
+                             displayName="JToolsMybatisLog"
+                             id="com.jtools.mybatislog.settings"/>
+        <java.programPatcher implementation="com.jtools.mybatislog.StarterJavaProgramPatcher"/>
+    </extensions>
+    <applicationListeners>
+        <listener class="com.jtools.mybatislog.JToolsMyBatisLogApplicationListener"
+                  topic="com.intellij.ide.AppLifecycleListener"/>
+    </applicationListeners>
+</idea-plugin>

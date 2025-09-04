@@ -17,9 +17,9 @@ class StarterJavaProgramPatcher : JavaProgramPatcher() {
 
         private val javaProgramPatcher: JavaProgramPatcher = StarterJavaProgramPatcher()
 
-        fun registry() {
+        fun install() {
             val jar =
-                StarterJavaProgramPatcher::class.java.classLoader.getResourceAsStream("META-INF/agent.jar")
+                StarterJavaProgramPatcher::class.java.classLoader.getResourceAsStream("META-INF/agent.jar")?:Thread.currentThread().contextClassLoader.getResourceAsStream("META-INF/agent.jar")
             jar?.use {
                 val bytes = it.readBytes()
                 val dir = System.getProperty("user.home") + "/.jtools/jtools-mybatis-log"
@@ -40,6 +40,10 @@ class StarterJavaProgramPatcher : JavaProgramPatcher() {
                 }
                 bytes
             }
+        }
+
+        fun registry() {
+            install()
             val extensionPoint = ApplicationManager.getApplication().extensionArea.getExtensionPoint(EP_NAME)
             extensionPoint.registerExtension(javaProgramPatcher) {
 

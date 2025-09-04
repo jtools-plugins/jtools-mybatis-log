@@ -20,10 +20,10 @@ repositories {
 }
 
 dependencies {
-    implementation(files("C:/Users/1/.jtools/sdk/sdk.jar"))
+    implementation(files("C:/Users/lhstack/.jtools/sdk/sdk.jar"))
     testImplementation(kotlin("test"))
     intellijPlatform{
-        intellijIdeaCommunity("2025.2")
+        intellijIdeaCommunity("2022.3")
         bundledPlugin("com.intellij.java")
     }
 }
