@@ -5,6 +5,8 @@ import com.intellij.execution.configurations.JavaParameters
 import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.execution.configurations.RunProfile
 import com.intellij.execution.runners.JavaProgramPatcher
+import java.io.File
+import java.nio.file.Files
 
 class StarterJavaProgramPatcher : JavaProgramPatcher() {
 
@@ -58,6 +60,31 @@ class StarterJavaProgramPatcher : JavaProgramPatcher() {
 
     override fun patchJavaParameters(executor: Executor, configuration: RunProfile, javaParameters: JavaParameters) {
         if (configuration is RunConfiguration) {
+            val file = File("${System.getProperty("user.home")}/.jtools/jtools-mybatis-log/agent.jar")
+            if(!file.exists()){
+                val jar =
+                    StarterJavaProgramPatcher::class.java.classLoader.getResourceAsStream("META-INF/agent.jar")?:Thread.currentThread().contextClassLoader.getResourceAsStream("META-INF/agent.jar")
+                jar?.use {
+                    val bytes = it.readBytes()
+                    val dir = System.getProperty("user.home") + "/.jtools/jtools-mybatis-log"
+                    File(dir).apply {
+                        if (!this.exists()) {
+                            this.mkdirs()
+                        }
+                        File(this, "agent.jar").apply {
+                            if (this.exists()) {
+                                val existBytes = Files.readAllBytes(this.toPath())
+                                if (existBytes.size != bytes.size) {
+                                    Files.write(this.toPath(), bytes)
+                                }
+                            } else {
+                                Files.write(this.toPath(), bytes)
+                            }
+                        }
+                    }
+                    bytes
+                }
+            }
             val state = PluginState.getInstance(configuration.project)
             javaParameters.vmParametersList.add(
                 "-javaagent:${System.getProperty("user.home")}/.jtools/jtools-mybatis-log/agent.jar=${state.getEnabled()},${state.getAnsiCode()}"
