@@ -51,10 +51,6 @@ class StarterJavaProgramPatcher : JavaProgramPatcher() {
         }
 
         fun unRegistry() {
-            val file = File(System.getProperty("user.home") + "/.jtools/jtools-mybatis-log/agent.jar")
-            file.runCatching {
-                FileUtils.delete(file)
-            }
             val extensionPoint = ApplicationManager.getApplication().extensionArea.getExtensionPoint(EP_NAME)
             extensionPoint.unregisterExtension(StarterJavaProgramPatcher::class.java)
         }
@@ -62,6 +58,10 @@ class StarterJavaProgramPatcher : JavaProgramPatcher() {
 
     override fun patchJavaParameters(executor: Executor, configuration: RunProfile, javaParameters: JavaParameters) {
         if (configuration is RunConfiguration) {
+            val file = File("${System.getProperty("user.home")}/.jtools/jtools-mybatis-log/agent.jar")
+            if(!file.exists()) {
+                install()
+            }
             val state = PluginState.getInstance(configuration.project)
             javaParameters.vmParametersList.add(
                 "-javaagent:${System.getProperty("user.home")}/.jtools/jtools-mybatis-log/agent.jar=${state.getEnabled()},${state.getAnsiCode()}"
