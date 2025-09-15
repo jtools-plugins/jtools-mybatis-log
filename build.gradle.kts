@@ -4,7 +4,7 @@ plugins {
     id("org.jetbrains.intellij") version "1.17.4"
 }
 
-group = "com.lhstack"
+group = "com.lhstack.jtools.mybatis"
 version = "1.0.4"
 
 

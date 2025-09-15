@@ -33,6 +33,11 @@
                 <li>兼容2025.2以上版本</li>
                 <li>新增设置选项: Main Menu => Settings => Other Settings => JToolsMybatisLog</li>
             </ul>
+
+            <h2>Version v1.0.3</h2>
+            <ul>
+                <li>Idea全版本支持</li>
+            </ul>
     ]]></change-notes>
     <idea-version since-build="171.*" until-build="252.*" />
     <!-- Product and plugin compatibility requirements.
@@ -42,9 +47,9 @@
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
-        <projectConfigurable instance="com.jtools.mybatislog.JToolsMybatisLogConfigurable"
+        <projectConfigurable instance="com.lhstack.jtools.mybatis.JToolsMybatisLogConfigurable"
                              displayName="JToolsMybatisLog"
                              id="com.jtools.mybatislog.settings"/>
-        <java.programPatcher implementation="com.jtools.mybatislog.StarterJavaProgramPatcher"/>
+        <java.programPatcher implementation="com.lhstack.jtools.mybatis.StarterJavaProgramPatcher"/>
     </extensions>
 </idea-plugin>

@@ -1,4 +1,4 @@
-package com.jtools.mybatislog
+package com.lhstack.jtools.mybatis
 
 import com.intellij.ide.util.PropertiesComponent
 import com.intellij.openapi.project.Project

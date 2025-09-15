@@ -1,4 +1,4 @@
-package com.jtools.mybatislog
+package com.lhstack.jtools.mybatis
 
 import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.project.Project

@@ -1,4 +1,4 @@
-package com.jtools.mybatislog;
+package com.lhstack.jtools.mybatis;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.pagehelper.PageHelper;

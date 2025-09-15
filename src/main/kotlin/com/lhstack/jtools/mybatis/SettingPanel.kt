@@ -1,4 +1,4 @@
-package com.jtools.mybatislog
+package com.lhstack.jtools.mybatis
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
@@ -9,6 +9,7 @@ import org.jdesktop.swingx.VerticalLayout
 import java.awt.BorderLayout
 import javax.swing.JLabel
 import javax.swing.JPanel
+import kotlin.collections.get
 
 class SettingPanel(val project: Project,val tempProps: TempProps,updated: (TempProps) -> Unit = {}): JPanel() {
 

@@ -1,4 +1,4 @@
-package com.jtools.mybatislog
+package com.lhstack.jtools.mybatis
 
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.JavaParameters
