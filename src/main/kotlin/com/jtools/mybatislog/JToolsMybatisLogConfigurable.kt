@@ -2,7 +2,6 @@ package com.jtools.mybatislog
 
 import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.NlsContexts
 import javax.swing.JComponent
 
 class TempProps() {
@@ -24,7 +23,8 @@ class JToolsMybatisLogConfigurable(val project: Project) : Configurable {
         settingPanel = SettingPanel(project, tempProps)
     }
 
-    override fun getDisplayName(): @NlsContexts.ConfigurableName String = "JToolsMybatisLog"
+    override fun getDisplayName(): String = "JToolsMybatisLog"
+    override fun getHelpTopic(): String? = null
 
     override fun createComponent(): JComponent = settingPanel
 
@@ -38,7 +38,8 @@ class JToolsMybatisLogConfigurable(val project: Project) : Configurable {
         pluginState.updateColorName(this.tempProps.colorName)
     }
 
-    override fun cancel() {
+
+    fun cancel() {
         this.tempProps.enabled = pluginState.getEnabled()
         this.tempProps.ansiCode = pluginState.getAnsiCode()
         this.tempProps.colorName = pluginState.getColorName()

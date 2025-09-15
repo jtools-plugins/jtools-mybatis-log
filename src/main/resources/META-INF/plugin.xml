@@ -34,7 +34,7 @@
                 <li>新增设置选项: Main Menu => Settings => Other Settings => JToolsMybatisLog</li>
             </ul>
     ]]></change-notes>
-    <idea-version since-build="223.*" until-build="252.*" />
+    <idea-version since-build="171.*" until-build="252.*" />
     <!-- Product and plugin compatibility requirements.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
     <depends>com.intellij.modules.platform</depends>
@@ -47,8 +47,4 @@
                              id="com.jtools.mybatislog.settings"/>
         <java.programPatcher implementation="com.jtools.mybatislog.StarterJavaProgramPatcher"/>
     </extensions>
-    <applicationListeners>
-        <listener class="com.jtools.mybatislog.JToolsMyBatisLogApplicationListener"
-                  topic="com.intellij.ide.AppLifecycleListener"/>
-    </applicationListeners>
 </idea-plugin>
