@@ -58,7 +58,7 @@ public class JtoolsAgent {
                                 CtMethod methodCopy = CtNewMethod.copy(method, ctClass, new ClassMap());
                                 String agentMethodName = method.getName() + "$agent$" + ctClass.getName().replace(".", "$");
                                 method.setName(agentMethodName);
-                                methodCopy.setBody(String.format("{\n return ($r)new com.jtools.mybatislog.ExecutorWrapper($0,%s($$),\"%s\",\"%s\");\n}", agentMethodName, sqlType, args));
+                                methodCopy.setBody(String.format("{\n return ($r)new com.lhstack.jtools.mybatis.ExecutorWrapper($0,%s($$),\"%s\",\"%s\");\n}", agentMethodName, sqlType, args));
                                 ctClass.addMethod(methodCopy);
                             }
                         }
