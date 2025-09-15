@@ -6,7 +6,6 @@ import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.execution.configurations.RunProfile
 import com.intellij.execution.runners.JavaProgramPatcher
 import com.intellij.openapi.application.ApplicationManager
-import org.apache.commons.io.FileUtils
 import java.io.File
 import java.nio.file.Files
 
@@ -63,9 +62,11 @@ class StarterJavaProgramPatcher : JavaProgramPatcher() {
                 install()
             }
             val state = PluginState.getInstance(configuration.project)
-            javaParameters.vmParametersList.add(
-                "-javaagent:${System.getProperty("user.home")}/.jtools/jtools-mybatis-log/agent.jar=${state.getEnabled()},${state.getAnsiCode()}"
-            )
+            if(state.getEnabled()){
+                javaParameters.vmParametersList.add(
+                    "-javaagent:${System.getProperty("user.home")}/.jtools/jtools-mybatis-log/agent.jar=${state.getAnsiCode()}"
+                )
+            }
 //            javaParameters.vmParametersList.add("-javaagent:D:\\projects\\java\\jtools-mybatis-log\\agent\\target\\agent-1.0-SNAPSHOT.jar=${enabled},${color}")
         }
 
