@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.lhstack.jtools.mybatis"
-version = "1.0.4"
+version = "1.0.5"
 
 
 repositories {

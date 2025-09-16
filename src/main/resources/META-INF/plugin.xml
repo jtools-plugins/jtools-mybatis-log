@@ -34,9 +34,14 @@
                 <li>新增设置选项: Main Menu => Settings => Other Settings => JToolsMybatisLog</li>
             </ul>
 
-            <h2>Version v1.0.3</h2>
+            <h2>Version v1.0.4</h2>
             <ul>
                 <li>Idea全版本支持</li>
+            </ul>
+
+            <h2>Version v1.0.5</h2>
+            <ul>
+                <li>修复版本更新导致的启动sql不打印问题</li>
             </ul>
     ]]></change-notes>
     <idea-version since-build="171.*" until-build="252.*" />
