@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.jtools.mybatislog"
-version = "1.0.3"
+version = "1.0.5"
 
 
 repositories {

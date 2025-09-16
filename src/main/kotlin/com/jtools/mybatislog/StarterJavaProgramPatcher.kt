@@ -27,14 +27,7 @@ class StarterJavaProgramPatcher : JavaProgramPatcher() {
                         this.mkdirs()
                     }
                     File(this, "agent.jar").apply {
-                        if (this.exists()) {
-                            val existBytes = Files.readAllBytes(this.toPath())
-                            if (existBytes.size != bytes.size) {
-                                Files.write(this.toPath(), bytes)
-                            }
-                        } else {
-                            Files.write(this.toPath(), bytes)
-                        }
+                        Files.write(this.toPath(), bytes)
                     }
                 }
                 bytes

@@ -51,5 +51,5 @@ class PluginImpl : IPlugin {
 
     override fun pluginDesc(): String = "jtools-mybatis-log"
 
-    override fun pluginVersion(): String = "v1.0.3"
+    override fun pluginVersion(): String = "v1.0.5"
 }
