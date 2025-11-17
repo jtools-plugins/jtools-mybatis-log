@@ -1,7 +1,9 @@
 package com.jtools.mybatislog
 
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.IconLoader
 import com.lhstack.tools.plugins.IPlugin
 import javax.swing.Icon
@@ -10,6 +12,7 @@ import javax.swing.JComponent
 class PluginImpl : IPlugin {
     companion object {
         val componentCache = mutableMapOf<String, JComponent>()
+        val disposer = mutableMapOf<String, Disposable>()
     }
 
     override fun install() {
@@ -27,16 +30,24 @@ class PluginImpl : IPlugin {
         tempProps.ansiCode = state.getAnsiCode()
         tempProps.enabled = state.getEnabled()
         tempProps.colorName = state.getColorName()
+        tempProps.configJsonPath = state.getJsonConfigPath()
+        tempProps.configJsonValue = state.getJsonConfigValue()
         SettingPanel(project, tempProps) {
             state.updateEnabled(it.enabled)
             state.updateAnsiCode(it.ansiCode)
             state.updateColorName(it.colorName)
+            state.updateJsonConfigPath(it.configJsonPath)
+            state.updateJsonConfigValue(it.configJsonValue)
+        }.also {
+            disposer[project.locationHash] = it
         }
     }
 
-    override fun closePanel(project: Project, pluginPanel: JComponent) {
-        super.closePanel(project, pluginPanel)
+    override fun closeProject(project: Project) {
         componentCache.remove(project.locationHash)
+        disposer.remove(project.locationHash)?.let {
+            Disposer.dispose(it)
+        }
     }
 
     override fun installRestart(): Boolean = false
@@ -51,5 +62,5 @@ class PluginImpl : IPlugin {
 
     override fun pluginDesc(): String = "jtools-mybatis-log"
 
-    override fun pluginVersion(): String = "v1.0.5"
+    override fun pluginVersion(): String = "v1.0.6"
 }

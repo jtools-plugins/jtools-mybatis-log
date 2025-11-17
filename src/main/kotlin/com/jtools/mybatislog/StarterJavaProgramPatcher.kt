@@ -7,6 +7,8 @@ import com.intellij.execution.configurations.RunProfile
 import com.intellij.execution.runners.JavaProgramPatcher
 import com.intellij.openapi.application.ApplicationManager
 import java.io.File
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 
 class StarterJavaProgramPatcher : JavaProgramPatcher() {
@@ -57,7 +59,8 @@ class StarterJavaProgramPatcher : JavaProgramPatcher() {
             val state = PluginState.getInstance(configuration.project)
             if(state.getEnabled()){
                 javaParameters.vmParametersList.add(
-                    "-javaagent:${System.getProperty("user.home")}/.jtools/jtools-mybatis-log/agent.jar=${state.getAnsiCode()}"
+                    "-javaagent:${System.getProperty("user.home")}/.jtools/jtools-mybatis-log/agent.jar=${state.getAnsiCode()},${URLEncoder.encode(state.getJsonConfigPath(),
+                        "UTF-8")}"
                 )
             }
 //            javaParameters.vmParametersList.add("-javaagent:D:\\projects\\java\\jtools-mybatis-log\\agent\\target\\agent-1.0-SNAPSHOT.jar=${enabled},${color}")

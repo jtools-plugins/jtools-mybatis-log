@@ -5,6 +5,7 @@ import javassist.*;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
+import java.net.URLDecoder;
 import java.security.ProtectionDomain;
 import java.util.HashSet;
 import java.util.Set;
@@ -59,7 +60,9 @@ public class JtoolsAgent {
                                 CtMethod methodCopy = CtNewMethod.copy(method, ctClass, new ClassMap());
                                 String agentMethodName = method.getName() + "$agent$" + ctClass.getName().replace(".", "$");
                                 method.setName(agentMethodName);
-                                methodCopy.setBody(String.format("{\n return ($r)new com.jtools.mybatislog.ExecutorWrapper($0,%s($$),\"%s\",\"%s\");\n}", agentMethodName, sqlType, args));
+                                String[] argArray = args.split(",");
+                                String configPath = URLDecoder.decode(argArray[1], "UTF-8");
+                                methodCopy.setBody(String.format("{\n return ($r)new com.jtools.mybatislog.ExecutorWrapper($0,%s($$),\"%s\",\"%s\",\"%s\");\n}", agentMethodName, sqlType,argArray[0],configPath));
                                 ctClass.addMethod(methodCopy);
                             }
                         }

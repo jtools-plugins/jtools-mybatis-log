@@ -19,9 +19,11 @@ import org.apache.ibatis.transaction.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.sql.SQLException;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class ExecutorWrapper implements Executor {
     private final Executor executor;
@@ -30,12 +32,29 @@ public class ExecutorWrapper implements Executor {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecutorWrapper.class);
     private final String sqlFormatType;
     private final String ansiCode;
+    private final AntPathMatcher matcher = new AntPathMatcher();
+    private List<String> excludePackages = Collections.emptyList();
 
-    public ExecutorWrapper(Configuration configuration, Executor result, String sqlFormatType, String ansiCode) {
+    public ExecutorWrapper(Configuration configuration, Executor result, String sqlFormatType, String ansiCode, String configJsonPath) {
         this.executor = result;
         this.configuration = configuration;
         this.sqlFormatType = sqlFormatType;
         this.ansiCode = ansiCode;
+        try {
+            File file = new File(configJsonPath);
+            if (file.isFile()) {
+                try (FileInputStream fis = new FileInputStream(file)) {
+                    Properties configProperties = new Properties();
+                    configProperties.load(fis);
+                    String excludePackages = configProperties.getProperty("excludePackages");
+                    if (excludePackages != null && !excludePackages.isEmpty()) {
+                        this.excludePackages = Arrays.stream(excludePackages.split(",")).distinct().collect(Collectors.toList());
+                    }
+                }
+            }
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
     }
 
 
@@ -130,6 +149,11 @@ public class ExecutorWrapper implements Executor {
     }
 
     private void log(String id, String sql, long time) {
+        for (String excludePackage : excludePackages) {
+            if (matcher.match(excludePackage, id)) {
+                return;
+            }
+        }
         String code = "\u001B[" + ansiCode + "m";
         try {
             LOGGER.info("{}\r\n{}{}\u001B[0m\r\n执行耗时: {}ms", id, code, sql, time);
