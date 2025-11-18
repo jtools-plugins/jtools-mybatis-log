@@ -1,18 +1,23 @@
 package com.jtools.mybatislog;
 
 import javassist.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
-import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.security.ProtectionDomain;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class JtoolsAgent {
 
     private static final Set<String> ENHANCES = new HashSet<>();
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(JtoolsAgent.class);
 
     static {
         ENHANCES.add("org/apache/ibatis/session/Configuration");
@@ -21,12 +26,23 @@ public class JtoolsAgent {
 
     public static void premain(String args, Instrumentation inst) {
         try {
+            String[] argArray = args.split(",");
+            String configPath = new String(Base64.getDecoder().decode(argArray[1]), StandardCharsets.UTF_8);
+            File file = new File(configPath);
+            Properties p = new Properties();
+            if(!file.exists() || !file.isFile()){
+                LOGGER.warn("jtools-mybatis-log配置文件不存在,配置地址: {}", file.getAbsolutePath());
+            }else {
+                try(FileInputStream fis = new FileInputStream(file)){
+                    p.load(fis);
+                }
+            }
             inst.addTransformer(new ClassFileTransformer() {
                 @Override
                 public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
                     try {
                         if (ENHANCES.contains(className)) {
-                            return enhance(loader, className, "Mysql");
+                            return enhance(loader, className, Optional.ofNullable(p.getProperty("sqlFormatType")).orElse("Mysql"));
                         }
                     } catch (Throwable ignore) {
 
@@ -60,9 +76,7 @@ public class JtoolsAgent {
                                 CtMethod methodCopy = CtNewMethod.copy(method, ctClass, new ClassMap());
                                 String agentMethodName = method.getName() + "$agent$" + ctClass.getName().replace(".", "$");
                                 method.setName(agentMethodName);
-                                String[] argArray = args.split(",");
-                                String configPath = URLDecoder.decode(argArray[1], "UTF-8");
-                                methodCopy.setBody(String.format("{\n return ($r)new com.jtools.mybatislog.ExecutorWrapper($0,%s($$),\"%s\",\"%s\",\"%s\");\n}", agentMethodName, sqlType,argArray[0],configPath));
+                                methodCopy.setBody(String.format("{\n return ($r)new com.jtools.mybatislog.ExecutorWrapper($0,%s($$),\"%s\",\"%s\",\"%s\");\n}", agentMethodName, sqlType, argArray[0], p.getProperty("excludePackages")));
                                 ctClass.addMethod(methodCopy);
                             }
                         }

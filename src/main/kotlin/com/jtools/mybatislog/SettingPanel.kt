@@ -121,6 +121,8 @@ class SettingPanel(val project: Project, val tempProps: TempProps, updated: (Tem
                         propertiesField.text = """
                             # 排除的包名,Use Spring AntPathMatcher 多个用,隔开
                             excludePackages=a.b.*,c.d.*,a.**.c.d
+                            # sql格式化类型,支持: Db2,MariaDb,MySql,N1ql,PlSql,PostgreSql,Redshift,SparkSql,StandardSql,TSql
+                            sqlFormatType=Mysql
                         """.trimIndent()
                         change.set(true)
                     }

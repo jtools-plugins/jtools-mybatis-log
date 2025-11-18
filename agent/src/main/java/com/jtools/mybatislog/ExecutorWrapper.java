@@ -35,25 +35,13 @@ public class ExecutorWrapper implements Executor {
     private final AntPathMatcher matcher = new AntPathMatcher();
     private List<String> excludePackages = Collections.emptyList();
 
-    public ExecutorWrapper(Configuration configuration, Executor result, String sqlFormatType, String ansiCode, String configJsonPath) {
+    public ExecutorWrapper(Configuration configuration, Executor result, String sqlFormatType, String ansiCode, String excludePackages) {
         this.executor = result;
         this.configuration = configuration;
         this.sqlFormatType = sqlFormatType;
         this.ansiCode = ansiCode;
-        try {
-            File file = new File(configJsonPath);
-            if (file.isFile()) {
-                try (FileInputStream fis = new FileInputStream(file)) {
-                    Properties configProperties = new Properties();
-                    configProperties.load(fis);
-                    String excludePackages = configProperties.getProperty("excludePackages");
-                    if (excludePackages != null && !excludePackages.isEmpty()) {
-                        this.excludePackages = Arrays.stream(excludePackages.split(",")).distinct().collect(Collectors.toList());
-                    }
-                }
-            }
-        } catch (Throwable e) {
-            throw new RuntimeException(e);
+        if(excludePackages != null && !excludePackages.isEmpty()) {
+            this.excludePackages = Arrays.asList(excludePackages.split(","));
         }
     }
 
