@@ -8,13 +8,13 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 
-class PluginState(val properties: PropertiesComponent) {
+class PluginState(val properties: PropertiesComponent,val project: Project) {
 
     companion object {
         const val PROPERTIES_PREFIX = "JTools.Mybatis.Log"
         fun getInstance(project: Project): PluginState {
             val instance = PropertiesComponent.getInstance(project)
-            val pluginState = PluginState(instance)
+            val pluginState = PluginState(instance,project)
             return pluginState
         }
     }
@@ -24,7 +24,7 @@ class PluginState(val properties: PropertiesComponent) {
     fun getJsonConfigPath() : String {
         val path = properties.getValue(
             "${PROPERTIES_PREFIX}.jsonConfigPath",
-            "${System.getProperty("user.dir")}\\.jtools\\jtools-mybatis-log\\config.properties"
+            "${System.getProperty("user.home")}\\.jtools\\jtools-mybatis-log\\${project.name}\\config.properties"
         )
         File(path).also {
             if(!it.exists()) {

@@ -91,27 +91,27 @@ class SettingPanel(val project: Project, val tempProps: TempProps, updated: (Tem
             }, BorderLayout.CENTER)
         })
 
-        this.add(JPanel(BorderLayout()).apply {
-            this.add(JLabel("配置文件路径: ", JLabel.LEFT), BorderLayout.WEST)
-            this.add(JPanel(HorizontalLayout()).apply {
-                val textFieldWithBrowseButton = TextFieldWithBrowseButton(configJsonPathField) {
-                    var file =
-                        VirtualFileManager.getInstance().findFileByUrl("file://" + tempProps.configJsonPath)
-                    var chooseFile = FileChooser.chooseFile(
-                        FileChooserDescriptor(true, false, false, false, false, false)
-                            .withFileFilter { it.extension == "properties" || it.extension == "txt" },
-                        project,
-                        file
-                    )
-                    if(chooseFile != null){
-                        configJsonPathField.text = chooseFile.path
-                        tempProps.configJsonPath = chooseFile.path
-                        updated.invoke(tempProps)
-                    }
-                }
-                this.add(textFieldWithBrowseButton)
-            }, BorderLayout.CENTER)
-        })
+//        this.add(JPanel(BorderLayout()).apply {
+//            this.add(JLabel("配置文件路径: ", JLabel.LEFT), BorderLayout.WEST)
+//            this.add(JPanel(HorizontalLayout()).apply {
+//                val textFieldWithBrowseButton = TextFieldWithBrowseButton(configJsonPathField) {
+//                    var file =
+//                        VirtualFileManager.getInstance().findFileByUrl("file://" + tempProps.configJsonPath)
+//                    var chooseFile = FileChooser.chooseFile(
+//                        FileChooserDescriptor(true, false, false, false, false, false)
+//                            .withFileFilter { it.extension == "properties" || it.extension == "txt" },
+//                        project,
+//                        file
+//                    )
+//                    if(chooseFile != null){
+//                        configJsonPathField.text = chooseFile.path
+//                        tempProps.configJsonPath = chooseFile.path
+//                        updated.invoke(tempProps)
+//                    }
+//                }
+//                this.add(textFieldWithBrowseButton)
+//            }, BorderLayout.CENTER)
+//        })
         this.add(JPanel(BorderLayout()).apply {
             this.add(JPanel(HorizontalLayout()).also {
                 it.add(JLabel("配置内容: ", JLabel.LEFT))
