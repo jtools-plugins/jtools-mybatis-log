@@ -1,8 +1,6 @@
 package com.lhstack.jtools.mybatis;
 
 import javassist.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -16,9 +14,6 @@ import java.util.*;
 public class JtoolsAgent {
 
     private static final Set<String> ENHANCES = new HashSet<>();
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(JtoolsAgent.class);
-
     static {
         ENHANCES.add("org/apache/ibatis/session/Configuration");
         ENHANCES.add("com/baomidou/mybatisplus/core/MybatisConfiguration");
@@ -31,7 +26,7 @@ public class JtoolsAgent {
             File file = new File(configPath);
             Properties p = new Properties();
             if(!file.exists() || !file.isFile()){
-                LOGGER.warn("jtools-mybatis-log配置文件不存在,配置地址: {}", file.getAbsolutePath());
+                System.out.printf("jtools-mybatis-log配置文件不存在,配置地址: %s%n", file.getAbsolutePath());
             }else {
                 try(FileInputStream fis = new FileInputStream(file)){
                     p.load(fis);
