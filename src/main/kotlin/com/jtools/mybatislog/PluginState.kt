@@ -3,6 +3,7 @@ package com.jtools.mybatislog
 import com.intellij.ide.util.PropertiesComponent
 import com.intellij.openapi.project.Project
 import java.io.File
+import java.io.FileOutputStream
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -59,8 +60,9 @@ class PluginState(val properties: PropertiesComponent,val project: Project) {
     }
 
     fun updateJsonConfigValue(value:String){
-        getJsonConfigPath().let { Paths.get(it) }.let {
-            Files.write(it, value.toByteArray(StandardCharsets.UTF_8), StandardOpenOption.WRITE)
+        FileOutputStream(getJsonConfigPath()).use {
+            it.write(value.toByteArray(StandardCharsets.UTF_8))
+            it.flush()
         }
     }
 }
