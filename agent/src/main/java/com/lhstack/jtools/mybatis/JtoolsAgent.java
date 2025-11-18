@@ -45,7 +45,7 @@ public class JtoolsAgent {
                             return enhance(loader, className, Optional.ofNullable(p.getProperty("sqlFormatType")).orElse("Mysql"));
                         }
                     } catch (Throwable ignore) {
-
+                        ignore.printStackTrace();
                     }
                     return classfileBuffer;
                 }
@@ -76,7 +76,7 @@ public class JtoolsAgent {
                                 CtMethod methodCopy = CtNewMethod.copy(method, ctClass, new ClassMap());
                                 String agentMethodName = method.getName() + "$agent$" + ctClass.getName().replace(".", "$");
                                 method.setName(agentMethodName);
-                                methodCopy.setBody(String.format("{\n return ($r)new com.jtools.mybatislog.ExecutorWrapper($0,%s($$),\"%s\",\"%s\",\"%s\");\n}", agentMethodName, sqlType, argArray[0], p.getProperty("excludePackages")));
+                                methodCopy.setBody(String.format("{\n return ($r)new com.lhstack.jtools.mybatis.ExecutorWrapper($0,%s($$),\"%s\",\"%s\",\"%s\");\n}", agentMethodName, sqlType, argArray[0], p.getProperty("excludePackages")));
                                 ctClass.addMethod(methodCopy);
                             }
                         }

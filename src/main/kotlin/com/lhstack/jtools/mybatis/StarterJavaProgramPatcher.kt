@@ -5,6 +5,7 @@ import com.intellij.execution.configurations.JavaParameters
 import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.execution.configurations.RunProfile
 import com.intellij.execution.runners.JavaProgramPatcher
+import org.apache.commons.codec.digest.DigestUtils
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
@@ -14,24 +15,19 @@ import kotlin.io.path.Path
 class StarterJavaProgramPatcher : JavaProgramPatcher() {
 
     val agentPath = "${System.getProperty("user.home")}/.jtools/jtools-mybatis-log/agent.jar"
-
-    val agentSignaturePath = "${System.getProperty("user.home")}/.jtools/jtools-mybatis-log/agent.signature"
-
     override fun patchJavaParameters(executor: Executor, configuration: RunProfile, javaParameters: JavaParameters) {
         if (configuration is RunConfiguration) {
-            val agentSignature = File(agentSignaturePath).let {
-                if(it.isFile && it.exists()) it.readText(StandardCharsets.UTF_8) else ""
-            }
-            val memorySignatureBytes = StarterJavaProgramPatcher::class.java.classLoader.getResourceAsStream("META-INF/agent.signature")?:Thread.currentThread().contextClassLoader.getResourceAsStream("META-INF/agent.signature")
-            val memorySignature = memorySignatureBytes?.use {
-                it.readBytes().toString(StandardCharsets.UTF_8)
-            } ?: UUID.randomUUID().toString()
+            val jar =
+                StarterJavaProgramPatcher::class.java.classLoader.getResourceAsStream("META-INF/agent.jar")
+                    ?: Thread.currentThread().contextClassLoader.getResourceAsStream("META-INF/agent.jar")
             //如果md5校验失败,则重新写入agent
-            if(memorySignature != agentSignature){
-                val jar =
-                    StarterJavaProgramPatcher::class.java.classLoader.getResourceAsStream("META-INF/agent.jar")?:Thread.currentThread().contextClassLoader.getResourceAsStream("META-INF/agent.jar")
-                jar?.use {
-                    val bytes = it.readBytes()
+            jar?.use {
+                val bytes = it.readBytes()
+                val agentFile = File(agentPath)
+                if (!agentFile.exists() || (DigestUtils.md5Hex(Files.readAllBytes(Path(agentPath))) != DigestUtils.md5Hex(
+                        bytes
+                    ))
+                ) {
                     val dir = System.getProperty("user.home") + "/.jtools/jtools-mybatis-log"
                     File(dir).apply {
                         if (!this.exists()) {
@@ -39,17 +35,20 @@ class StarterJavaProgramPatcher : JavaProgramPatcher() {
                         }
                         File(this, "agent.jar").apply {
                             Files.write(this.toPath(), bytes)
-                            Files.write(Path(agentSignaturePath),memorySignature.toByteArray(StandardCharsets.UTF_8))
                         }
                     }
-                    bytes
                 }
             }
             val state = PluginState.getInstance(configuration.project)
-            if(state.getEnabled()){
+            if (state.getEnabled()) {
                 javaParameters.vmParametersList.add(
-                    "-javaagent:${agentPath}=${state.getAnsiCode()},${java.util.Base64.getEncoder().encodeToString(state.getJsonConfigPath().toByteArray(
-                        StandardCharsets.UTF_8))}"
+                    "-javaagent:${agentPath}=${state.getAnsiCode()},${
+                        Base64.getEncoder().encodeToString(
+                            state.getJsonConfigPath().toByteArray(
+                                StandardCharsets.UTF_8
+                            )
+                        )
+                    }"
                 )
             }
 
