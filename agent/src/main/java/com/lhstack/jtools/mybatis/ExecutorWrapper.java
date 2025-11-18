@@ -20,6 +20,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -30,12 +32,17 @@ public class ExecutorWrapper implements Executor {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecutorWrapper.class);
     private final String sqlFormatType;
     private final String ansiCode;
+    private final AntPathMatcher matcher = new AntPathMatcher();
+    private List<String> excludePackages = Collections.emptyList();
 
-    public ExecutorWrapper(Configuration configuration, Executor result, String sqlFormatType, String ansiCode) {
+    public ExecutorWrapper(Configuration configuration, Executor result, String sqlFormatType, String ansiCode, String excludePackages) {
         this.executor = result;
         this.configuration = configuration;
         this.sqlFormatType = sqlFormatType;
         this.ansiCode = ansiCode;
+        if(excludePackages != null && !excludePackages.isEmpty()) {
+            this.excludePackages = Arrays.asList(excludePackages.split(","));
+        }
     }
 
 
@@ -130,6 +137,11 @@ public class ExecutorWrapper implements Executor {
     }
 
     private void log(String id, String sql, long time) {
+        for (String excludePackage : excludePackages) {
+            if (matcher.match(excludePackage, id)) {
+                return;
+            }
+        }
         String code = "\u001B[" + ansiCode + "m";
         try {
             LOGGER.info("{}\r\n{}{}\u001B[0m\r\n执行耗时: {}ms", id, code, sql, time);

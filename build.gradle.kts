@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.lhstack.jtools.mybatis"
-version = "1.0.5"
+version = "1.0.6"
 
 
 repositories {
@@ -20,7 +20,7 @@ intellij {
 }
 
 dependencies {
-    implementation(files("C:/Users/lhstack/.jtools/sdk/sdk.jar"))
+//    implementation(files("C:/Users/lhstack/.jtools/sdk/sdk.jar"))
     testImplementation("org.jetbrains.kotlin:kotlin-test")
 }
 tasks {

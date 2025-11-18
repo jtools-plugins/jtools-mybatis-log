@@ -48,7 +48,8 @@ class StarterJavaProgramPatcher : JavaProgramPatcher() {
             val state = PluginState.getInstance(configuration.project)
             if(state.getEnabled()){
                 javaParameters.vmParametersList.add(
-                    "-javaagent:${agentPath}=${state.getAnsiCode()}"
+                    "-javaagent:${agentPath}=${state.getAnsiCode()},${java.util.Base64.getEncoder().encodeToString(state.getJsonConfigPath().toByteArray(
+                        StandardCharsets.UTF_8))}"
                 )
             }
 

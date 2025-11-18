@@ -43,8 +43,12 @@
             <ul>
                 <li>修复版本更新导致的启动sql不打印问题</li>
             </ul>
+            <h2>Version v1.0.6</h2>
+            <ul>
+                <li>新增配置栏: 排除不需要打印sql的包,sql格式化类型</li>
+            </ul>
     ]]></change-notes>
-    <idea-version since-build="171.*" until-build="252.*" />
+    <idea-version since-build="171.*" until-build="253.*" />
     <!-- Product and plugin compatibility requirements.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
     <depends>com.intellij.modules.platform</depends>
