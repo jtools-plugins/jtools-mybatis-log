@@ -50,7 +50,7 @@ class JToolsMybatisLogConfigurable(val project: Project) : Configurable {
         pluginState.updateJsonConfigValue(this.tempProps.configJsonValue)
     }
 
-    override fun cancel() {
+    fun cancel() {
         this.tempProps.enabled = pluginState.getEnabled()
         this.tempProps.ansiCode = pluginState.getAnsiCode()
         this.tempProps.colorName = pluginState.getColorName()

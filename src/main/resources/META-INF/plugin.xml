@@ -47,6 +47,10 @@
             <ul>
                 <li>新增配置栏: 排除不需要打印sql的包,sql格式化类型</li>
             </ul>
+            <h2>Version v1.0.7</h2>
+            <ul>
+                <li>fix: 应用无法启动</li>
+            </ul>
     ]]></change-notes>
     <idea-version since-build="171" until-build="253.*" />
     <!-- Product and plugin compatibility requirements.
