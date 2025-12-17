@@ -247,6 +247,6 @@ public class ExecutorWrapper implements Executor {
 
     @Override
     public void setExecutorWrapper(Executor executor) {
-        executor.setExecutorWrapper(executor);
+        this.executor.setExecutorWrapper(executor);
     }
 }

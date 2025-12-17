@@ -20,7 +20,6 @@ intellij {
 }
 
 dependencies {
-//    implementation(files("C:/Users/lhstack/.jtools/sdk/sdk.jar"))
     testImplementation("org.jetbrains.kotlin:kotlin-test")
 }
 tasks {

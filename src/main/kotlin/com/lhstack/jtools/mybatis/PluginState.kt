@@ -24,11 +24,14 @@ class PluginState(val properties: PropertiesComponent,val project: Project) {
             "${PROPERTIES_PREFIX}.jsonConfigPath",
             "${System.getProperty("user.home")}\\.jtools\\jtools-mybatis-log\\${project.name}\\config.properties"
         )
-        File(path).also {
-            if(!it.exists()) {
-                it.parentFile.mkdirs()
-                it.createNewFile()
+        try {
+            File(path).also {
+                if(!it.exists()) {
+                    it.parentFile?.mkdirs()
+                    it.createNewFile()
+                }
             }
+        } catch (_: Exception) {
         }
         return path
     }
@@ -57,9 +60,12 @@ class PluginState(val properties: PropertiesComponent,val project: Project) {
     }
 
     fun updateJsonConfigValue(value:String){
-        FileOutputStream(getJsonConfigPath()).use {
-            it.write(value.toByteArray(StandardCharsets.UTF_8))
-            it.flush()
+        try {
+            FileOutputStream(getJsonConfigPath()).use {
+                it.write(value.toByteArray(StandardCharsets.UTF_8))
+                it.flush()
+            }
+        } catch (_: Exception) {
         }
     }
 }

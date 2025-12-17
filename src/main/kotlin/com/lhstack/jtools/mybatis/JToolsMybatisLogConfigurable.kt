@@ -5,7 +5,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import javax.swing.JComponent
 
-class TempProps() {
+class TempProps {
     var enabled = true
     var ansiCode = "92"
     var colorName: String = "亮绿色"
@@ -50,7 +50,7 @@ class JToolsMybatisLogConfigurable(val project: Project) : Configurable {
         pluginState.updateJsonConfigValue(this.tempProps.configJsonValue)
     }
 
-    fun cancel() {
+    override fun cancel() {
         this.tempProps.enabled = pluginState.getEnabled()
         this.tempProps.ansiCode = pluginState.getAnsiCode()
         this.tempProps.colorName = pluginState.getColorName()

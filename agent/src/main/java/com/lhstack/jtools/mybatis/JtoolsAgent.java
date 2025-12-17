@@ -82,7 +82,7 @@ public class JtoolsAgent {
                 }
             });
         } catch (Throwable ignore) {
-
+            ignore.printStackTrace();
         }
     }
 
