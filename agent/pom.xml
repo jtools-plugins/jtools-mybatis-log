@@ -107,6 +107,7 @@
                                         <Premain-Class>com.lhstack.jtools.mybatis.JtoolsAgent</Premain-Class>
                                         <Agent-Class>com.lhstack.jtools.mybatis.JtoolsAgent</Agent-Class>
                                         <Can-Redefine-Classes>true</Can-Redefine-Classes>
+                                        <Can-Retransform-Classes>true</Can-Retransform-Classes>
                                     </manifestEntries>
                                 </transformer>
                             </transformers>
