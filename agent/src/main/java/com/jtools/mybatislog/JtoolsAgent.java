@@ -1,8 +1,6 @@
 package com.jtools.mybatislog;
 
 import javassist.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -17,8 +15,6 @@ public class JtoolsAgent {
 
     private static final Set<String> ENHANCES = new HashSet<>();
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(JtoolsAgent.class);
-
     static {
         ENHANCES.add("org/apache/ibatis/session/Configuration");
         ENHANCES.add("com/baomidou/mybatisplus/core/MybatisConfiguration");
@@ -26,14 +22,22 @@ public class JtoolsAgent {
 
     public static void premain(String args, Instrumentation inst) {
         try {
+            if (args == null || args.isEmpty()) {
+                System.err.println("[jtools-mybatis-log] Agent args is empty, skip initialization");
+                return;
+            }
             String[] argArray = args.split(",");
+            if (argArray.length < 2) {
+                System.err.println("[jtools-mybatis-log] Invalid agent args format, skip initialization");
+                return;
+            }
             String configPath = new String(Base64.getDecoder().decode(argArray[1]), StandardCharsets.UTF_8);
             File file = new File(configPath);
             Properties p = new Properties();
-            if(!file.exists() || !file.isFile()){
-                LOGGER.warn("jtools-mybatis-log配置文件不存在,配置地址: {}", file.getAbsolutePath());
-            }else {
-                try(FileInputStream fis = new FileInputStream(file)){
+            if (!file.exists() || !file.isFile()) {
+                System.out.println("[jtools-mybatis-log] Config file not found: " + file.getAbsolutePath());
+            } else {
+                try (FileInputStream fis = new FileInputStream(file)) {
                     p.load(fis);
                 }
             }
@@ -41,15 +45,14 @@ public class JtoolsAgent {
                 @Override
                 public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
                     try {
-                        if (ENHANCES.contains(className)) {
+                        if (className != null && ENHANCES.contains(className)) {
                             return enhance(loader, className, Optional.ofNullable(p.getProperty("sqlFormatType")).orElse("Mysql"));
                         }
-                    } catch (Throwable ignore) {
-
+                    } catch (Throwable e) {
+                        System.err.println("[jtools-mybatis-log] Transform error for class " + className + ": " + e.getMessage());
                     }
                     return classfileBuffer;
                 }
-
 
                 private CtClass findClassInClassPool(ClassLoader loader, String classPath, boolean firstTry) {
                     ClassPool pool = ClassPool.getDefault();
@@ -57,7 +60,7 @@ public class JtoolsAgent {
                     try {
                         ctClass = pool.get(classPath);
                     } catch (NotFoundException e) {
-                        if (firstTry) {
+                        if (firstTry && loader != null) {
                             pool.appendClassPath(new LoaderClassPath(loader));
                             ctClass = findClassInClassPool(loader, classPath, false);
                         }
@@ -68,6 +71,10 @@ public class JtoolsAgent {
                 private byte[] enhance(ClassLoader loader, String className, String sqlType) {
                     String classPath = className.replaceAll("/", ".");
                     CtClass ctClass = this.findClassInClassPool(loader, classPath, true);
+                    if (ctClass == null) {
+                        System.err.println("[jtools-mybatis-log] Cannot find class in pool: " + classPath);
+                        return null;
+                    }
                     try {
                         // 只对本类方法进行拦截，不处理父类方法
                         CtMethod[] methods = ctClass.getDeclaredMethods();
@@ -76,18 +83,22 @@ public class JtoolsAgent {
                                 CtMethod methodCopy = CtNewMethod.copy(method, ctClass, new ClassMap());
                                 String agentMethodName = method.getName() + "$agent$" + ctClass.getName().replace(".", "$");
                                 method.setName(agentMethodName);
-                                methodCopy.setBody(String.format("{\n return ($r)new com.jtools.mybatislog.ExecutorWrapper($0,%s($$),\"%s\",\"%s\",\"%s\");\n}", agentMethodName, sqlType, argArray[0], p.getProperty("excludePackages")));
+                                String excludePackages = p.getProperty("excludePackages");
+                                methodCopy.setBody(String.format("{\n return ($r)new com.jtools.mybatislog.ExecutorWrapper($0,%s($),\"%s\",\"%s\",\"%s\");\n}", agentMethodName, sqlType, argArray[0], excludePackages == null ? "" : excludePackages));
                                 ctClass.addMethod(methodCopy);
                             }
                         }
-                        return ctClass.toBytecode();
+                        byte[] bytecode = ctClass.toBytecode();
+                        ctClass.detach(); // Release memory
+                        return bytecode;
                     } catch (Throwable e) {
-                        throw new RuntimeException(e);
+                        System.err.println("[jtools-mybatis-log] Enhance error for class " + classPath + ": " + e.getMessage());
+                        return null;
                     }
                 }
-            });
-        } catch (Throwable ignore) {
-
+            }, true); // Set canRetransform to true
+        } catch (Throwable e) {
+            System.err.println("[jtools-mybatis-log] Agent initialization error: " + e.getMessage());
         }
     }
 
