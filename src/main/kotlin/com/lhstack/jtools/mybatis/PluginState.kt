@@ -22,7 +22,7 @@ class PluginState(val properties: PropertiesComponent,val project: Project) {
     fun getJsonConfigPath() : String {
         val path = properties.getValue(
             "${PROPERTIES_PREFIX}.jsonConfigPath",
-            "${System.getProperty("user.home")}\\.jtools\\jtools-mybatis-log\\${project.name}\\config.properties"
+            File(System.getProperty("user.home"), ".jtools/jtools-mybatis-log/${project.name}/config.properties").absolutePath
         )
         try {
             File(path).also {

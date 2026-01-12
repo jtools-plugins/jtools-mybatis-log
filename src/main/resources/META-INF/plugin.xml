@@ -51,6 +51,12 @@
             <ul>
                 <li>fix: 应用无法启动</li>
             </ul>
+            <h2>Version v1.0.8</h2>
+            <ul>
+                <li>fix: 修复 MyBatis-Plus 分页插件的 ORDER BY 排序参数未打印问题</li>
+                <li>fix: 修复分页插件优化后的 count SQL 未正确显示问题</li>
+                <li>fix: 修复 macOS/Linux 系统下配置文件路径不兼容导致的权限错误</li>
+            </ul>
     ]]></change-notes>
     <idea-version since-build="171" until-build="253.*" />
     <!-- Product and plugin compatibility requirements.
