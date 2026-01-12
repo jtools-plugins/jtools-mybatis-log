@@ -33,8 +33,32 @@
                 <li>兼容2025.2以上版本</li>
                 <li>新增设置选项: Main Menu => Settings => Other Settings => JToolsMybatisLog</li>
             </ul>
+
+            <h2>Version v1.0.4</h2>
+            <ul>
+                <li>Idea全版本支持</li>
+            </ul>
+
+            <h2>Version v1.0.5</h2>
+            <ul>
+                <li>修复版本更新导致的启动sql不打印问题</li>
+            </ul>
+            <h2>Version v1.0.6</h2>
+            <ul>
+                <li>新增配置栏: 排除不需要打印sql的包,sql格式化类型</li>
+            </ul>
+            <h2>Version v1.0.7</h2>
+            <ul>
+                <li>fix: 应用无法启动</li>
+            </ul>
+            <h2>Version v1.0.8</h2>
+            <ul>
+                <li>fix: 修复 MyBatis-Plus 分页插件的 ORDER BY 排序参数未打印问题</li>
+                <li>fix: 修复分页插件优化后的 count SQL 未正确显示问题</li>
+                <li>fix: 修复 macOS/Linux 系统下配置文件路径不兼容导致的权限错误</li>
+            </ul>
     ]]></change-notes>
-    <idea-version since-build="223.*" until-build="252.*" />
+    <idea-version since-build="171" until-build="253.*" />
     <!-- Product and plugin compatibility requirements.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
     <depends>com.intellij.modules.platform</depends>
@@ -42,13 +66,9 @@
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
-        <projectConfigurable instance="com.jtools.mybatislog.JToolsMybatisLogConfigurable"
+        <projectConfigurable instance="com.lhstack.jtools.mybatis.JToolsMybatisLogConfigurable"
                              displayName="JToolsMybatisLog"
                              id="com.jtools.mybatislog.settings"/>
-        <java.programPatcher implementation="com.jtools.mybatislog.StarterJavaProgramPatcher"/>
+        <java.programPatcher implementation="com.lhstack.jtools.mybatis.StarterJavaProgramPatcher"/>
     </extensions>
-    <applicationListeners>
-        <listener class="com.jtools.mybatislog.JToolsMyBatisLogApplicationListener"
-                  topic="com.intellij.ide.AppLifecycleListener"/>
-    </applicationListeners>
 </idea-plugin>

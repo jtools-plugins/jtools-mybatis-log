@@ -1,10 +1,10 @@
-package com.jtools.mybatislog
+package com.lhstack.jtools.mybatis
 
 import com.intellij.ui.Gray
 import java.awt.Color
 import javax.swing.JComponent
 
-data object Const {
+object Const {
     val ansiColorMap = mutableMapOf<String, String>()
 
     val colorMap = mutableMapOf<String, Color>()
