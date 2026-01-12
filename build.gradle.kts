@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.jtools.mybatislog"
-version = "1.0.7"
+version = "1.0.8"
 
 
 repositories {
@@ -20,8 +20,7 @@ repositories {
 }
 
 dependencies {
-implementation(files("C:/Users/1/.jtools/sdk/sdk.jar"))
-    //    implementation(files("C:/Users/lhstack/.jtools/sdk/sdk.jar"))
+    implementation(files("/Users/lhstack/.jtools/sdk/sdk.jar"))
     testImplementation(kotlin("test"))
     intellijPlatform{
         intellijIdeaCommunity("2022.3")

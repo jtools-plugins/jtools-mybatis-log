@@ -84,11 +84,25 @@ public class ExecutorWrapper implements Executor {
                     page = (Page<?>) parameter;
                 }
                 if (page != null) {
+                    // 处理 order by
+                    List<com.baomidou.mybatisplus.core.metadata.OrderItem> orders = page.orders();
+                    if (orders != null && !orders.isEmpty()) {
+                        sb.append(" ORDER BY ");
+                        for (int i = 0; i < orders.size(); i++) {
+                            com.baomidou.mybatisplus.core.metadata.OrderItem order = orders.get(i);
+                            if (i > 0) {
+                                sb.append(", ");
+                            }
+                            sb.append(order.getColumn());
+                            sb.append(order.isAsc() ? " ASC" : " DESC");
+                        }
+                    }
+                    // 处理分页
                     sb.append(" LIMIT ");
                     if (page.getCurrent() <= 1) {
                         sb.append(page.getSize());
                     } else {
-                        sb.append((page.getCurrent() - 1) * page.getSize()).append(" , ").append(page.getSize());
+                        sb.append((page.getCurrent() - 1) * page.getSize()).append(", ").append(page.getSize());
                     }
                 }
 
@@ -155,7 +169,8 @@ public class ExecutorWrapper implements Executor {
         if (executor instanceof ExecutorWrapper) {
             return executor.query(ms, parameter, rowBounds, resultHandler, cacheKey, boundSql);
         }
-        String sql = genSql(ms, ms.getBoundSql(parameter), parameter);
+        // 使用传入的 boundSql 而不是 ms.getBoundSql，这样可以获取到分页插件优化后的 count SQL
+        String sql = genSql(ms, boundSql, parameter);
         long startTime = System.currentTimeMillis();
         try {
             return executor.query(ms, parameter, rowBounds, resultHandler, cacheKey, boundSql);
