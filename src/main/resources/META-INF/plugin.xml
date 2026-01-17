@@ -57,6 +57,13 @@
                 <li>fix: 修复分页插件优化后的 count SQL 未正确显示问题</li>
                 <li>fix: 修复 macOS/Linux 系统下配置文件路径不兼容导致的权限错误</li>
             </ul>
+            <h2>Version v1.0.9</h2>
+            <ul>
+                <li>feat: 重构设置面板，支持表格化管理排除包</li>
+                <li>feat: 支持通过选择类来导入库(Library)包到排除列表</li>
+                <li>feat: 新增 SQL 格式化方言选择</li>
+                <li>fix: 修复 Idea 2017.1 版本兼容性问题</li>
+            </ul>
     ]]></change-notes>
     <idea-version since-build="171" until-build="253.*" />
     <!-- Product and plugin compatibility requirements.
