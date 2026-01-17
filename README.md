@@ -13,3 +13,9 @@
 - fix: 修复 MyBatis-Plus 分页插件的 ORDER BY 排序参数未打印问题
 - fix: 修复分页插件优化后的 count SQL 未正确显示问题
 - fix: 修复 macOS/Linux 系统下配置文件路径不兼容导致的权限错误
+
+## v1.0.9
+- feat: 重构设置面板，支持表格化管理排除包
+- feat: 支持通过选择类来导入库(Library)包到排除列表
+- feat: 新增 SQL 格式化方言选择
+- fix: 修复 Idea 2017.1 版本兼容性问题
