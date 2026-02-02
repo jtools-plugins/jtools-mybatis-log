@@ -69,7 +69,7 @@
                 <li>feat: 新增 SQL 格式化开关，关闭时将 SQL 压缩为单行输出</li>
             </ul>
     ]]></change-notes>
-    <idea-version since-build="171" until-build="253.*" />
+    <idea-version since-build="171" until-build="261.*" />
     <!-- Product and plugin compatibility requirements.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
     <depends>com.intellij.modules.platform</depends>
