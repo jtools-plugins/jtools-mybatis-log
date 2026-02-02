@@ -64,6 +64,10 @@
                 <li>feat: 新增 SQL 格式化方言选择</li>
                 <li>fix: 修复 Idea 2017.1 版本兼容性问题</li>
             </ul>
+            <h2>Version v1.1.0</h2>
+            <ul>
+                <li>feat: 新增 SQL 格式化开关，关闭时将 SQL 压缩为单行输出</li>
+            </ul>
     ]]></change-notes>
     <idea-version since-build="171" until-build="253.*" />
     <!-- Product and plugin compatibility requirements.

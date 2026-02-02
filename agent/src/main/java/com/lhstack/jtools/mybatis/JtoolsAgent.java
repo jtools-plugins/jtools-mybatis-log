@@ -46,6 +46,7 @@ public class JtoolsAgent {
             final String ansiCode = argArray[0];
             final String excludePkgs = p.getProperty("excludePackages", "");
             final String sqlType = p.getProperty("sqlFormatType", "Mysql");
+            final boolean sqlFormatEnable = Boolean.parseBoolean(p.getProperty("sqlFormatEnable", "true"));
 
             inst.addTransformer(new ClassFileTransformer() {
                 @Override
@@ -89,8 +90,8 @@ public class JtoolsAgent {
 
                                     CtMethod methodCopy = CtNewMethod.copy(method, "newExecutor", ctClass, new ClassMap());
                                     String body = String.format(
-                                            "{ return ($r)new com.lhstack.jtools.mybatis.ExecutorWrapper($0, %s($$), \"%s\", \"%s\", \"%s\"); }",
-                                            agentMethodName, sqlType, ansiCode, excludePackages
+                                            "{ return ($r)new com.lhstack.jtools.mybatis.ExecutorWrapper($0, %s($$), \"%s\", \"%s\", \"%s\", %s); }",
+                                            agentMethodName, sqlType, ansiCode, excludePackages, sqlFormatEnable
                                     );
                                     methodCopy.setBody(body);
                                     ctClass.addMethod(methodCopy);

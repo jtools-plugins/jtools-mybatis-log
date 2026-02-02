@@ -32,14 +32,16 @@ public class ExecutorWrapper implements Executor {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecutorWrapper.class);
     private final String sqlFormatType;
     private final String ansiCode;
+    private final boolean sqlFormatEnable;
     private final AntPathMatcher matcher = new AntPathMatcher();
     private List<String> excludePackages = Collections.emptyList();
 
-    public ExecutorWrapper(Configuration configuration, Executor result, String sqlFormatType, String ansiCode, String excludePackages) {
+    public ExecutorWrapper(Configuration configuration, Executor result, String sqlFormatType, String ansiCode, String excludePackages, boolean sqlFormatEnable) {
         this.executor = result;
         this.configuration = configuration;
         this.sqlFormatType = sqlFormatType;
         this.ansiCode = ansiCode;
+        this.sqlFormatEnable = sqlFormatEnable;
         if(excludePackages != null && !excludePackages.isEmpty()) {
             this.excludePackages = Arrays.asList(excludePackages.split(","));
         }
@@ -123,7 +125,11 @@ public class ExecutorWrapper implements Executor {
             } catch (Throwable ignore) {
 
             }
-            return SqlFormatter.of(Dialect.nameOf(sqlFormatType).orElse(Dialect.MySql)).format(sb.toString());
+            String rawSql = sb.toString();
+            if (sqlFormatEnable) {
+                return SqlFormatter.of(Dialect.nameOf(sqlFormatType).orElse(Dialect.MySql)).format(rawSql);
+            }
+            return compressSql(rawSql);
         } catch (Throwable e) {
             try {
                 LOGGER.error("gen sql failure,statement id: {}", statement.getId(), e);
@@ -132,6 +138,13 @@ public class ExecutorWrapper implements Executor {
             }
             return "";
         }
+    }
+
+    private String compressSql(String sql) {
+        if (sql == null || sql.isEmpty()) {
+            return "";
+        }
+        return sql.replaceAll("\\s+", " ").trim();
     }
 
     @Override

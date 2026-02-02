@@ -61,6 +61,7 @@ class SettingPanel(val project: Project, val tempProps: TempProps, val updated: 
             "TSql"
         )
     )
+    private val sqlFormatEnableCheckBox = JBCheckBox()
     private val excludeTableModel = object : DefaultTableModel(arrayOf("排除的包/类"), 0), ItemRemovable {
         override fun isCellEditable(row: Int, column: Int): Boolean {
             return false
@@ -72,6 +73,12 @@ class SettingPanel(val project: Project, val tempProps: TempProps, val updated: 
         // Initialize UI components first
         sqlFormatComboBox.addItemListener {
             if (change.get()) {
+                saveConfig()
+            }
+        }
+        sqlFormatEnableCheckBox.addActionListener {
+            if (change.get()) {
+                sqlFormatComboBox.isEnabled = sqlFormatEnableCheckBox.isSelected
                 saveConfig()
             }
         }
@@ -103,6 +110,10 @@ class SettingPanel(val project: Project, val tempProps: TempProps, val updated: 
         })
 
         // SQL Format Configuration
+        this.add(JPanel(BorderLayout()).apply {
+            this.add(JLabel("开启SQL格式化打印: ", JLabel.LEFT), BorderLayout.WEST)
+            this.add(sqlFormatEnableCheckBox, BorderLayout.CENTER)
+        })
         this.add(JPanel(BorderLayout()).apply {
             this.add(JLabel("SQL格式化类型: ", JLabel.LEFT), BorderLayout.WEST)
             this.add(JPanel(FlowLayout(FlowLayout.LEFT, 0, 0)).apply {
@@ -225,6 +236,9 @@ class SettingPanel(val project: Project, val tempProps: TempProps, val updated: 
             // Load sqlFormatType
             val sqlFormat = props.getProperty("sqlFormatType", "MySql")
             sqlFormatComboBox.selectedItem = sqlFormat
+            val sqlFormatEnable = props.getProperty("sqlFormatEnable", "true").toBoolean()
+            sqlFormatEnableCheckBox.isSelected = sqlFormatEnable
+            sqlFormatComboBox.isEnabled = sqlFormatEnable
 
         } catch (e: Exception) {
             e.printStackTrace()
@@ -255,6 +269,7 @@ class SettingPanel(val project: Project, val tempProps: TempProps, val updated: 
 
             // Update sqlFormatType
             props.setProperty("sqlFormatType", sqlFormatComboBox.selectedItem as String)
+            props.setProperty("sqlFormatEnable", sqlFormatEnableCheckBox.isSelected.toString())
 
             val writer = StringWriter()
             props.store(writer, "Configuration")
