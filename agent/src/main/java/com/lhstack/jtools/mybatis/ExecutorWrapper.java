@@ -1,14 +1,12 @@
 package com.lhstack.jtools.mybatis;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.github.pagehelper.PageHelper;
-import com.github.vertical_blank.sqlformatter.SqlFormatter;
-import com.github.vertical_blank.sqlformatter.languages.Dialect;
 import org.apache.ibatis.cache.CacheKey;
 import org.apache.ibatis.cursor.Cursor;
 import org.apache.ibatis.executor.BatchResult;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.executor.parameter.ParameterHandler;
+import org.apache.ibatis.logging.Log;
+import org.apache.ibatis.logging.LogFactory;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.reflection.MetaObject;
@@ -16,25 +14,31 @@ import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 import org.apache.ibatis.transaction.Transaction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
+/**
+ * 包装真实 Executor,在委托执行前后回填参数并打印完整 SQL。
+ * <p>
+ * 日志走 MyBatis 自带的 {@link LogFactory}: agent 增强的是 MyBatis 自身的类,
+ * 该门面必然可用,不引入 slf4j 等外部日志依赖,避免宿主缺少依赖时应用无法启动。
+ */
 public class ExecutorWrapper implements Executor {
+
+    private static final Log LOGGER = LogFactory.getLog(ExecutorWrapper.class);
+
+    private static final String ANSI_RESET = "\u001B[0m";
+
     private final Executor executor;
     private final Configuration configuration;
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ExecutorWrapper.class);
     private final String sqlFormatType;
     private final String ansiCode;
     private final boolean sqlFormatEnable;
     private final AntPathMatcher matcher = new AntPathMatcher();
-    private List<String> excludePackages = Collections.emptyList();
+    private final List<String> excludePackages;
 
     public ExecutorWrapper(Configuration configuration, Executor result, String sqlFormatType, String ansiCode, String excludePackages, boolean sqlFormatEnable) {
         this.executor = result;
@@ -42,102 +46,64 @@ public class ExecutorWrapper implements Executor {
         this.sqlFormatType = sqlFormatType;
         this.ansiCode = ansiCode;
         this.sqlFormatEnable = sqlFormatEnable;
-        if(excludePackages != null && !excludePackages.isEmpty()) {
-            this.excludePackages = Arrays.asList(excludePackages.split(","));
-        }
+        this.excludePackages = parseExcludePackages(excludePackages);
     }
 
+    private static List<String> parseExcludePackages(String excludePackages) {
+        if (excludePackages == null || excludePackages.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> patterns = new ArrayList<String>();
+        for (String pattern : excludePackages.split(",")) {
+            String trimmed = pattern.trim();
+            if (!trimmed.isEmpty()) {
+                patterns.add(trimmed);
+            }
+        }
+        return Collections.unmodifiableList(patterns);
+    }
+
+    // region SQL 生成
 
     public String genSql(MappedStatement statement, BoundSql boundSql, Object parameter) {
         try {
             String sql = boundSql.getSql();
-            ParameterHandler parameterHandler = configuration.newParameterHandler(statement, parameter, boundSql);
-            MockPreparedStatement mockPreparedStatement = null;
-            StringBuilder sb = new StringBuilder();
-            char[] charArray = sql.toCharArray();
-            int idx = 0;
-            for (char c : charArray) {
-                if (c == '?') {
-                    idx++;
-                }
-            }
-            mockPreparedStatement = new MockPreparedStatement(idx);
-            parameterHandler.setParameters(mockPreparedStatement);
-            idx = 1;
-            for (char c : charArray) {
-                if (c == '?') {
-                    sb.append(mockPreparedStatement.getParameters().get(idx++));
-                } else {
-                    sb.append(c);
-                }
-            }
-
-            try {
-                Page<?> page = null;
-                if (parameter instanceof Map) {
-                    Map<?, ?> param = (Map<?, ?>) parameter;
-                    if (param.containsKey("page")) {
-                        Object p = param.get("page");
-                        if (p instanceof Page) {
-                            page = (Page<?>) p;
-                        }
-                    }
-                } else if (parameter instanceof Page) {
-                    page = (Page<?>) parameter;
-                }
-                if (page != null) {
-                    // 处理 order by
-                    List<com.baomidou.mybatisplus.core.metadata.OrderItem> orders = page.orders();
-                    if (orders != null && !orders.isEmpty()) {
-                        sb.append(" ORDER BY ");
-                        for (int i = 0; i < orders.size(); i++) {
-                            com.baomidou.mybatisplus.core.metadata.OrderItem order = orders.get(i);
-                            if (i > 0) {
-                                sb.append(", ");
-                            }
-                            sb.append(order.getColumn());
-                            sb.append(order.isAsc() ? " ASC" : " DESC");
-                        }
-                    }
-                    // 处理分页
-                    sb.append(" LIMIT ");
-                    if (page.getCurrent() <= 1) {
-                        sb.append(page.getSize());
-                    } else {
-                        sb.append((page.getCurrent() - 1) * page.getSize()).append(", ").append(page.getSize());
-                    }
-                }
-
-            } catch (Throwable ignore) {
-
-            }
-
-            try {
-                com.github.pagehelper.Page<Object> localPage = PageHelper.getLocalPage();
-                if (localPage != null && localPage.getPageSize() > 0) {
-                    sb.append(" LIMIT ");
-                    if (localPage.getPageNum() <= 1) {
-                        sb.append(localPage.getPageSize());
-                    } else {
-                        sb.append((localPage.getPageNum() - 1) * localPage.getPageSize()).append(" , ").append(localPage.getPageSize());
-                    }
-                }
-            } catch (Throwable ignore) {
-
-            }
-            String rawSql = sb.toString();
-            if (sqlFormatEnable) {
-                return SqlFormatter.of(Dialect.nameOf(sqlFormatType).orElse(Dialect.MySql)).format(rawSql);
-            }
-            return compressSql(rawSql);
+            int[] placeholders = PlaceholderScanner.positions(sql);
+            String filledSql = fillParameters(statement, boundSql, parameter, sql, placeholders);
+            String pagedSql = PaginationAppender.append(filledSql, parameter);
+            return sqlFormatEnable ? SqlFormatSupport.format(pagedSql, sqlFormatType) : compressSql(pagedSql);
         } catch (Throwable e) {
-            try {
-                LOGGER.error("gen sql failure,statement id: {}", statement.getId(), e);
-            } catch (Throwable err) {
-                System.out.printf("gen sql failure,statement id: %s,error: %s", statement.getId(), e);
-            }
+            LOGGER.error("[jtools-mybatis-log] gen sql failure, statement id: " + safeStatementId(statement), e);
             return "";
         }
+    }
+
+    /**
+     * 把参数值回填到占位符位置。字符串字面量与注释中的 {@code ?} 不算占位符,
+     * 否则会导致后续所有参数错位。
+     */
+    private String fillParameters(MappedStatement statement, BoundSql boundSql, Object parameter,
+                                  String sql, int[] placeholders) throws SQLException {
+        if (placeholders.length == 0) {
+            return sql;
+        }
+        ParameterHandler parameterHandler = configuration.newParameterHandler(statement, parameter, boundSql);
+        MockPreparedStatement mockPreparedStatement = new MockPreparedStatement(placeholders.length);
+        parameterHandler.setParameters(mockPreparedStatement);
+        List<String> values = mockPreparedStatement.getParameters();
+
+        StringBuilder sb = new StringBuilder(sql.length() + placeholders.length * 8);
+        int copiedUpTo = 0;
+        for (int i = 0; i < placeholders.length; i++) {
+            int position = placeholders[i];
+            sb.append(sql, copiedUpTo, position);
+            String value = values.get(i + 1);
+            // 未被捕获的参数保留原始占位符,不伪装成 null
+            sb.append(value == null ? "?" : value);
+            copiedUpTo = position + 1;
+        }
+        sb.append(sql, copiedUpTo, sql.length());
+        return sb.toString();
     }
 
     private String compressSql(String sql) {
@@ -147,9 +113,45 @@ public class ExecutorWrapper implements Executor {
         return sql.replaceAll("\\s+", " ").trim();
     }
 
+    private String safeStatementId(MappedStatement statement) {
+        try {
+            return statement.getId();
+        } catch (Throwable e) {
+            return "<unknown>";
+        }
+    }
+
+    // endregion
+
+    // region 日志输出
+
+    private boolean isExcluded(String statementId) {
+        for (String excludePackage : excludePackages) {
+            if (matcher.match(excludePackage, statementId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void log(String id, String sql, long time) {
+        LOGGER.warn(id + "\r\n\u001B[" + ansiCode + "m" + sql + ANSI_RESET + "\r\n执行耗时: " + time + "ms");
+    }
+
+    // endregion
+
+    // region Executor 委托
+
+    /**
+     * 嵌套包装时只透传: 外层已经打印过同一条语句。
+     */
+    private boolean shouldSkipLogging(MappedStatement ms) {
+        return executor instanceof ExecutorWrapper || isExcluded(ms.getId());
+    }
+
     @Override
     public int update(MappedStatement ms, Object parameter) throws SQLException {
-        if (executor instanceof ExecutorWrapper) {
+        if (shouldSkipLogging(ms)) {
             return executor.update(ms, parameter);
         }
         String sql = genSql(ms, ms.getBoundSql(parameter), parameter);
@@ -157,29 +159,13 @@ public class ExecutorWrapper implements Executor {
         try {
             return executor.update(ms, parameter);
         } finally {
-            long time = System.currentTimeMillis() - startTime;
-            log(ms.getId(), sql, time);
-        }
-
-    }
-
-    private void log(String id, String sql, long time) {
-        for (String excludePackage : excludePackages) {
-            if (matcher.match(excludePackage, id)) {
-                return;
-            }
-        }
-        String code = "\u001B[" + ansiCode + "m";
-        try {
-            LOGGER.info("{}\r\n{}{}\u001B[0m\r\n执行耗时: {}ms", id, code, sql, time);
-        } catch (Throwable e) {
-            System.out.printf("%s\r\n%s%s\u001B[0m\r\n执行耗时: %sms", id, code, sql, time);
+            log(ms.getId(), sql, System.currentTimeMillis() - startTime);
         }
     }
 
     @Override
     public <E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler, CacheKey cacheKey, BoundSql boundSql) throws SQLException {
-        if (executor instanceof ExecutorWrapper) {
+        if (shouldSkipLogging(ms)) {
             return executor.query(ms, parameter, rowBounds, resultHandler, cacheKey, boundSql);
         }
         String sql = genSql(ms, boundSql, parameter);
@@ -187,14 +173,13 @@ public class ExecutorWrapper implements Executor {
         try {
             return executor.query(ms, parameter, rowBounds, resultHandler, cacheKey, boundSql);
         } finally {
-            long time = System.currentTimeMillis() - startTime;
-            log(ms.getId(), sql, time);
+            log(ms.getId(), sql, System.currentTimeMillis() - startTime);
         }
     }
 
     @Override
     public <E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
-        if (executor instanceof ExecutorWrapper) {
+        if (shouldSkipLogging(ms)) {
             return executor.query(ms, parameter, rowBounds, resultHandler);
         }
         String sql = genSql(ms, ms.getBoundSql(parameter), parameter);
@@ -202,14 +187,13 @@ public class ExecutorWrapper implements Executor {
         try {
             return executor.query(ms, parameter, rowBounds, resultHandler);
         } finally {
-            long time = System.currentTimeMillis() - startTime;
-            log(ms.getId(), sql, time);
+            log(ms.getId(), sql, System.currentTimeMillis() - startTime);
         }
     }
 
     @Override
     public <E> Cursor<E> queryCursor(MappedStatement ms, Object parameter, RowBounds rowBounds) throws SQLException {
-        if (executor instanceof ExecutorWrapper) {
+        if (shouldSkipLogging(ms)) {
             return executor.queryCursor(ms, parameter, rowBounds);
         }
         String sql = genSql(ms, ms.getBoundSql(parameter), parameter);
@@ -217,8 +201,7 @@ public class ExecutorWrapper implements Executor {
         try {
             return executor.queryCursor(ms, parameter, rowBounds);
         } finally {
-            long time = System.currentTimeMillis() - startTime;
-            log(ms.getId(), sql, time);
+            log(ms.getId(), sql, System.currentTimeMillis() - startTime);
         }
     }
 
@@ -276,4 +259,6 @@ public class ExecutorWrapper implements Executor {
     public void setExecutorWrapper(Executor executor) {
         this.executor.setExecutorWrapper(executor);
     }
+
+    // endregion
 }

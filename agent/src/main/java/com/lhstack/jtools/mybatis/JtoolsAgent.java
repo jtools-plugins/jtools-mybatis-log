@@ -45,7 +45,7 @@ public class JtoolsAgent {
 
             final String ansiCode = argArray[0];
             final String excludePkgs = p.getProperty("excludePackages", "");
-            final String sqlType = p.getProperty("sqlFormatType", "Mysql");
+            final String sqlType = p.getProperty("sqlFormatType", "MySql");
             final boolean sqlFormatEnable = Boolean.parseBoolean(p.getProperty("sqlFormatEnable", "true"));
 
             inst.addTransformer(new ClassFileTransformer() {

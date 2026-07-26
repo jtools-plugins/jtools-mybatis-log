@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.lhstack.jtools.mybatis"
-version = "1.1.0"
+version = "1.1.1"
 
 
 repositories {
@@ -35,7 +35,7 @@ tasks {
 
     patchPluginXml {
         sinceBuild.set("171")
-        untilBuild.set("261.*")
+        untilBuild.set("265.*")
     }
 
     signPlugin {

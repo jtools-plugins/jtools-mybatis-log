@@ -972,9 +972,4 @@ public class AntPathMatcher {
 			return this.endsOnDoubleWildCard;
 		}
 	}
-
-    public static void main(String[] args) {
-        AntPathMatcher antPathMatcher = new AntPathMatcher();
-        System.out.println(antPathMatcher.match("com.lhstack.a.?.d", "com.lhstack.a.v.d"));
-    }
 }
