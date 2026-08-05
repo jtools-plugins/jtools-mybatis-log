@@ -75,8 +75,9 @@ JtoolsAgent（读 properties） ──► ExecutorWrapper ──► MockPrepared
 ## 构建、测试和验证方式
 
 - 插件：`./gradlew build`、`./gradlew buildPlugin`；`patchPluginXml` 覆盖 since/until build；`signPlugin`、`publishPlugin` 从环境变量读取凭据。
-- Agent：在 `agent/` 下执行 Maven `package`，shade 后手工放置到 `src/main/resources/META-INF/agent.jar`。构建脚本中没有自动化这一步。
-- 测试：仅声明了 `kotlin-test` 依赖，项目中不存在 `src/test` 或 `agent/src/test`，无任何自动化测试，也没有 CI 配置。验证方式为手工运行插件并观察控制台输出。
+- Agent：在 `agent/` 下执行 Maven `package`，shade 后手工拷贝到 `src/main/resources/META-INF/agent.jar`。拷贝仍需手工执行，但 Gradle 的 `verifyAgentJar` 任务会在 `processResources` 前比对时间戳，漏拷时构建失败。
+- Agent 集成测试：`agent-it/` 是独立 Maven 模块（不在 Gradle 构建内），以 `-javaagent` 挂载真实 `agent.jar`，对真实 MyBatis / MyBatis-Plus / PageHelper + H2 断言实际打印的 SQL。运行前需先 `cd agent && mvn install`，再 `cd agent-it && mvn test`。
+- 插件侧无自动化测试，也没有 CI 配置；Kotlin 侧验证方式为 `./gradlew compileKotlin` 加手工运行观察控制台输出。
 
 ## 项目编码约定
 
@@ -104,7 +105,7 @@ JtoolsAgent（读 properties） ──► ExecutorWrapper ──► MockPrepared
 - 提交者身份：`lhstack <lhstack@foxmail.com>`（绝大多数提交），另有少量历史提交来自另一邮箱。
 - 提交信息风格由早期中文短句（“包名调整”、“版本更新”）逐步转为 Conventional Commits 前缀（`feat:`、`fix:`、`chore:`）。
 - 存在同一变更内容重复提交多次的历史（如 v1.0.8、v1.1.0 的说明连续出现 2~3 次）。
-- `src/main/resources/META-INF/agent.jar` 作为二进制产物纳入版本控制，agent 源码改动需要同时提交重新构建的 jar。
+- `src/main/resources/META-INF/agent.jar` 作为二进制产物纳入版本控制，agent 源码改动需要同时提交重新构建的 jar；`verifyAgentJar` 会拦住漏拷的情况。
 - 发布流程：`build.gradle.kts` 的 `version`、`plugin.xml` 的 `change-notes`、`README.md` 的更新日志三处需同步。
 
 ## 有证据支持的用户编码习惯
@@ -119,8 +120,7 @@ JtoolsAgent（读 properties） ──► ExecutorWrapper ──► MockPrepared
 
 ## 当前无法确认的事项
 
-- 未确认：agent.jar 的构建与拷贝是否存在未纳入版本控制的本地脚本。
 - 未确认：`ToolsPlugin.txt` 中 `com.jtools.mybatislog.PluginImpl` 的用途，该类在本仓库中不存在，疑为其他 jtools 宿主插件的加载约定。
-- 未确认：`untilBuild=261.*` 是否经过实际高版本 IDE 验证。
-- 未确认：本机无可用 JDK，`./gradlew` 与 Maven 构建均未在当前环境验证过。
-- 未确认：`MultiLanguageTextField` 与 `SettingPanel.configJsonPathField` 目前无引用者，是历史遗留还是为后续功能预留。
+- 未确认：`untilBuild=265.*` 是否经过实际高版本 IDE 验证。
+- 本机 PATH 无 `java` / `mvn`，但可用 IDE 捆绑的 JBR（`/Applications/IntelliJ IDEA.app/Contents/jbr/Contents/Home`）与 `~/.m2/wrapper` 下的 Maven 3.9.16；`JAVA_HOME` 指向该 JBR 后 `./gradlew` 与 `mvn` 均可正常构建。
+- Gradle 完整 `build` 需下载 IntelliJ SDK，耗时较长；仅验证编译时用 `./gradlew compileKotlin`。
