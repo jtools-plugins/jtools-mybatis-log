@@ -5,10 +5,7 @@ build/
 !**/src/test/**/build/
 
 ### IntelliJ IDEA ###
-.idea/modules.xml
-.idea/jarRepositories.xml
-.idea/compiler.xml
-.idea/libraries/
+.idea/
 *.iws
 *.iml
 *.ipr
@@ -42,3 +39,8 @@ bin/
 .DS_Store
 ### Maven ###
 target/
+# maven-shade-plugin 构建产物
+dependency-reduced-pom.xml
+
+### IntelliJ Platform Gradle Plugin ###
+.intellijPlatform/
