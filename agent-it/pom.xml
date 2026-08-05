@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.jtools.agent</groupId>
+    <artifactId>agent-it</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <!--
+        agent 的集成测试模块: 以 -javaagent 方式挂载真实 agent.jar,
+        针对真实 MyBatis / MyBatis-Plus / PageHelper 与 H2 断言打印出的 SQL。
+        单元级断言无法覆盖字节码增强路径,只有真正跑一遍才能发现
+        ParamMap.get 抛异常这类回归。
+    -->
+    <properties>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <mybatis.version>3.5.16</mybatis.version>
+        <mybatis-plus.version>3.5.6</mybatis-plus.version>
+        <pagehelper.version>6.1.0</pagehelper.version>
+        <h2.version>2.2.224</h2.version>
+        <junit.version>5.11.4</junit.version>
+
+        <!-- agent 参数格式: ansiCode,base64(configPath) -->
+        <it.agent.ansiCode>92</it.agent.ansiCode>
+        <!-- base64 of: target/test-classes/it-config.properties -->
+        <it.agent.configBase64>dGFyZ2V0L3Rlc3QtY2xhc3Nlcy9pdC1jb25maWcucHJvcGVydGllcw==</it.agent.configBase64>
+    </properties>
+
+    <dependencies>
+        <!-- 被测对象: 以 javaagent 挂载,同时提供 classpath 便于反射断言 -->
+        <dependency>
+            <groupId>com.jtools.agent</groupId>
+            <artifactId>agent</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mybatis</groupId>
+            <artifactId>mybatis</artifactId>
+            <version>${mybatis.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus</artifactId>
+            <version>${mybatis-plus.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <!-- 刻意不引入 slf4j: 用于验证宿主缺少 slf4j 时 agent 仍可正常工作 -->
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.pagehelper</groupId>
+            <artifactId>pagehelper</artifactId>
+            <version>${pagehelper.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>${h2.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <repositories>
+        <repository>
+            <id>public</id>
+            <name>aliyun nexus</name>
+            <url>https://maven.aliyun.com/repository/public</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+        </repository>
+    </repositories>
+
+    <build>
+        <plugins>
+            <!-- 解析出 agent.jar 在本地仓库中的真实路径,供 -javaagent 使用 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.6.1</version>
+                <executions>
+                    <execution>
+                        <id>resolve-agent-path</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <argLine>-javaagent:${com.jtools.agent:agent:jar}=${it.agent.ansiCode},${it.agent.configBase64}</argLine>
+                    <!-- 每个测试类一个 JVM: agent 的 LOGGER 与配置都是静态状态 -->
+                    <reuseForks>false</reuseForks>
+                    <forkCount>1</forkCount>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

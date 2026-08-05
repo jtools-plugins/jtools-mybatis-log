@@ -2,6 +2,7 @@ package com.lhstack.jtools.mybatis;
 
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 在 Executor 层补出分页插件尚未改写的 ORDER BY / LIMIT 片段。
@@ -65,10 +66,23 @@ final class PaginationAppender {
         if (isPage(parameter)) {
             return parameter;
         }
-        if (parameter instanceof java.util.Map) {
-            Object candidate = ((java.util.Map<?, ?>) parameter).get("page");
-            if (isPage(candidate)) {
-                return candidate;
+        if (parameter instanceof Map) {
+            return resolvePageFromValues((Map<?, ?>) parameter);
+        }
+        return null;
+    }
+
+    /**
+     * 遍历参数值查找分页对象,而不是按固定键名取值。
+     * <p>
+     * 两个原因: MyBatis 的 ParamMap 在键不存在时抛 BindingException 而非返回 null,
+     * 按键取值会让不含该键的语句整条无法渲染; 分页参数的键名又取决于 mapper 方法签名,
+     * BaseMapper.selectPage 的 page 参数没有 @Param 注解,键名是 param1 而不是 page。
+     */
+    private static Object resolvePageFromValues(Map<?, ?> parameter) {
+        for (Object value : parameter.values()) {
+            if (isPage(value)) {
+                return value;
             }
         }
         return null;
