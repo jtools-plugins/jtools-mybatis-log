@@ -13,6 +13,12 @@ import java.util.*;
 
 public class JtoolsAgent {
 
+    /**
+     * 增强时原方法被改名为 {@code newExecutor$agent$<类名>}, 该中缀同时用作
+     * "本类已被增强" 的标记, 生成与检测必须使用同一个常量。
+     */
+    private static final String AGENT_METHOD_INFIX = "$agent$";
+
     private static final Set<String> ENHANCES = new HashSet<>();
 
     static {
@@ -65,6 +71,18 @@ public class JtoolsAgent {
                     }
                 }
 
+                /**
+                 * 目标类原本不存在带该中缀的方法, 出现即说明已被另一份 agent 增强过。
+                 */
+                private boolean isAlreadyEnhanced(CtClass ctClass) {
+                    for (CtMethod declared : ctClass.getDeclaredMethods()) {
+                        if (declared.getName().contains(AGENT_METHOD_INFIX)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+
                 private byte[] enhance(ClassLoader loader, String className, String sqlType,
                                         String ansiCode, String excludePackages, byte[] originalBytecode) {
                     String classPath = className.replace("/", ".");
@@ -78,6 +96,16 @@ public class JtoolsAgent {
 
                         CtClass ctClass = pool.makeClass(new ByteArrayInputStream(originalBytecode));
 
+                        // 同一 JVM 可能挂载多份本 agent: 开发本插件时, IDE 中已启用的插件
+                        // 会向测试进程再注入一份。JVM 把上一个 transformer 的产物交给下一个,
+                        // 重复增强会产生同名同签名的方法, 导致
+                        // ClassFormatError: Duplicate method name, 整个类无法加载。
+                        if (isAlreadyEnhanced(ctClass)) {
+                            System.out.println("[jtools-mybatis-log] Already enhanced by another agent instance, skip: " + classPath);
+                            ctClass.detach();
+                            return null;
+                        }
+
                         boolean modified = false;
                         CtMethod[] methods = ctClass.getDeclaredMethods();
                         for (CtMethod method : methods) {
@@ -85,7 +113,7 @@ public class JtoolsAgent {
                                 if ("newExecutor".equals(method.getName()) &&
                                         method.getReturnType().getName().equals("org.apache.ibatis.executor.Executor")) {
 
-                                    String agentMethodName = method.getName() + "$agent$" + ctClass.getName().replace(".", "$");
+                                    String agentMethodName = method.getName() + AGENT_METHOD_INFIX + ctClass.getName().replace(".", "$");
                                     method.setName(agentMethodName);
 
                                     CtMethod methodCopy = CtNewMethod.copy(method, "newExecutor", ctClass, new ClassMap());
