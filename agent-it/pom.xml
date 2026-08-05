@@ -25,6 +25,18 @@
         <h2.version>2.2.224</h2.version>
         <junit.version>5.11.4</junit.version>
 
+        <!--
+            被测 jar: 直接指向随插件分发的那一份, 确保测的就是用户实际加载的产物,
+            而不是本地仓库里可能过期的副本。
+            agent 源码改动后需先重新打包并拷贝到该路径, 否则 JVM 会以
+            "agent library failed to init" 启动失败:
+              cd ../agent && mvn clean package
+              cp target/agent-1.0-SNAPSHOT.jar ../src/main/resources/META-INF/agent.jar
+            agent 不作为 classpath 依赖: 测试代码不引用其类,
+            且 javaagent 挂载的 jar 由 JVM 追加到 system class path。
+        -->
+        <it.agent.jar>${project.basedir}/../src/main/resources/META-INF/agent.jar</it.agent.jar>
+
         <!-- agent 参数格式: ansiCode,base64(configPath) -->
         <it.agent.ansiCode>92</it.agent.ansiCode>
         <!-- base64 of: target/test-classes/it-config.properties -->
@@ -32,14 +44,6 @@
     </properties>
 
     <dependencies>
-        <!-- 被测对象: 以 javaagent 挂载,同时提供 classpath 便于反射断言 -->
-        <dependency>
-            <groupId>com.jtools.agent</groupId>
-            <artifactId>agent</artifactId>
-            <version>1.0-SNAPSHOT</version>
-            <scope>test</scope>
-        </dependency>
-
         <dependency>
             <groupId>org.mybatis</groupId>
             <artifactId>mybatis</artifactId>
@@ -102,28 +106,13 @@
 
     <build>
         <plugins>
-            <!-- 解析出 agent.jar 在本地仓库中的真实路径,供 -javaagent 使用 -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.6.1</version>
-                <executions>
-                    <execution>
-                        <id>resolve-agent-path</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>properties</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
                 <configuration>
-                    <argLine>-javaagent:${com.jtools.agent:agent:jar}=${it.agent.ansiCode},${it.agent.configBase64}</argLine>
+                    <argLine>-javaagent:${it.agent.jar}=${it.agent.ansiCode},${it.agent.configBase64}</argLine>
                     <!-- 每个测试类一个 JVM: agent 的 LOGGER 与配置都是静态状态 -->
                     <reuseForks>false</reuseForks>
                     <forkCount>1</forkCount>
