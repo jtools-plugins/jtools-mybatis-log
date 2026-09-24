@@ -13,7 +13,7 @@ IntelliJ 平台插件，用于在控制台打印 MyBatis / MyBatis-Plus 的完�
   `com.baomidou.mybatisplus.core.MybatisConfiguration#newExecutor`，把返回的 `Executor` 包装为
   `ExecutorWrapper`，在委托前后生成 SQL 文本并计时输出。
 
-插件 ID：`com.jtools.mybatis.log.jtools-mybatis-log`；当前版本 `1.1.0`（`build.gradle.kts`）。
+插件 ID：`com.jtools.mybatis.log.jtools-mybatis-log`；当前版本 `1.1.3`（`build.gradle.kts`）。
 
 ## 工程环境与主要工具
 

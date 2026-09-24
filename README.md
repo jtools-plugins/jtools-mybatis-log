@@ -38,3 +38,7 @@
 ## v1.1.2
 - fix: 修复同一 JVM 挂载多份本 agent 时重复增强导致 ClassFormatError、应用无法启动的问题
 - fix: 修复 mybatis-plus BaseMapper 分页查询的 LIMIT 与 ORDER BY 未打印的问题，分页参数改为按值识别，不再依赖参数键名
+
+## v1.1.3
+- feat: 新增按 SQL 类型排除打印，可选择不输出 SELECT、INSERT、UPDATE、DELETE
+- fix: 修复 SQL 格式化类型选择 PlSql 时，分页语句仍按 MySQL 的 LIMIT 打印的问题，改为输出 Oracle 11g 的 ROWNUM 分页

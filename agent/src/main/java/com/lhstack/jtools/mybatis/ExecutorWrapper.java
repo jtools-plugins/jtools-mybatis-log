@@ -104,7 +104,7 @@ public class ExecutorWrapper implements Executor {
             String sql = boundSql.getSql();
             int[] placeholders = PlaceholderScanner.positions(sql);
             String filledSql = fillParameters(statement, boundSql, parameter, sql, placeholders);
-            String pagedSql = PaginationAppender.append(filledSql, parameter);
+            String pagedSql = PaginationAppender.append(filledSql, parameter, sqlFormatType);
             return sqlFormatEnable ? SqlFormatSupport.format(pagedSql, sqlFormatType) : compressSql(pagedSql);
         } catch (Throwable e) {
             LOGGER.error("[jtools-mybatis-log] gen sql failure, statement id: " + safeStatementId(statement), e);

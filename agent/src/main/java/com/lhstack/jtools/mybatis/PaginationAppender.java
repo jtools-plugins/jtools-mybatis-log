@@ -5,21 +5,25 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 在 Executor 层补出分页插件尚未改写的 ORDER BY / LIMIT 片段。
+ * 在 Executor 层补出分页插件尚未改写的 ORDER BY 与分页片段。
  * <p>
  * mybatis-plus 与 pagehelper 都是可选依赖,这里全部通过反射访问:
  * 未引入对应框架的项目不会触发任何类解析,避免每条 SQL 都抛一次
  * {@code NoClassDefFoundError}。
  * <p>
- * 注意: 分页插件在 StatementHandler 层改写 BoundSql,本类拿不到改写结果,
- * 因此只能按分页参数推算。count 语句与主查询共用同一分页参数,
- * 其输出的 LIMIT / ORDER BY 仅供参考。
+ * 注意: 分页插件在进入本类之后才改写 BoundSql,本类拿不到改写结果,
+ * 因此只能按分页参数推算。分页语法跟随配置的 sqlFormatType:
+ * PlSql 按 Oracle 11g 的 ROWNUM 嵌套查询输出,其余方言保持 MySQL 的 LIMIT。
+ * count 语句与主查询共用同一分页参数,其输出的分页片段仅供参考。
  */
 final class PaginationAppender {
 
     private static final String IPAGE_INTERFACE = "com.baomidou.mybatisplus.core.metadata.IPage";
 
     private static final String PAGE_HELPER_CLASS = "com.github.pagehelper.PageHelper";
+
+    /** sql-formatter 的 PlSql 就是 Oracle 方言,分页语法与格式化选项使用同一个配置。 */
+    private static final String ORACLE_DIALECT = "PlSql";
 
     /** 三态: null 未探测, TRUE/FALSE 已探测。避免重复 Class.forName。 */
     private static volatile Boolean pageHelperPresent;
@@ -29,10 +33,10 @@ final class PaginationAppender {
     private PaginationAppender() {
     }
 
-    static String append(String sql, Object parameter) {
+    static String append(String sql, Object parameter, String dialectName) {
         StringBuilder sb = new StringBuilder(sql);
-        if (!appendMybatisPlusPage(sb, parameter)) {
-            appendPageHelperPage(sb);
+        if (!appendMybatisPlusPage(sb, parameter, dialectName)) {
+            appendPageHelperPage(sb, dialectName);
         }
         return sb.toString();
     }
@@ -42,14 +46,14 @@ final class PaginationAppender {
     /**
      * @return 是否命中 mybatis-plus 分页参数
      */
-    private static boolean appendMybatisPlusPage(StringBuilder sb, Object parameter) {
+    private static boolean appendMybatisPlusPage(StringBuilder sb, Object parameter, String dialectName) {
         Object page = resolvePage(parameter);
         if (page == null) {
             return false;
         }
         try {
             appendOrderBy(sb, page);
-            appendLimit(sb, toLong(invoke(page, "getCurrent")), toLong(invoke(page, "getSize")));
+            appendPage(sb, toLong(invoke(page, "getCurrent")), toLong(invoke(page, "getSize")), dialectName);
             return true;
         } catch (Throwable e) {
             return false;
@@ -133,7 +137,7 @@ final class PaginationAppender {
 
     // region pagehelper
 
-    private static void appendPageHelperPage(StringBuilder sb) {
+    private static void appendPageHelperPage(StringBuilder sb, String dialectName) {
         Method method = localPageMethod();
         if (method == null) {
             return;
@@ -147,7 +151,7 @@ final class PaginationAppender {
             if (pageSize <= 0) {
                 return;
             }
-            appendLimit(sb, toLong(invoke(localPage, "getPageNum")), pageSize);
+            appendPage(sb, toLong(invoke(localPage, "getPageNum")), pageSize, dialectName);
         } catch (Throwable ignored) {
             // pagehelper 版本差异导致取不到分页参数时,不影响 SQL 主体输出
         }
@@ -181,15 +185,47 @@ final class PaginationAppender {
 
     // endregion
 
-    private static void appendLimit(StringBuilder sb, long current, long size) {
+    /**
+     * 按当前页与页大小补分页。size 无效时不补,避免把不分页的语句改成非法 SQL。
+     */
+    private static void appendPage(StringBuilder sb, long current, long size, String dialectName) {
         if (size <= 0) {
             return;
         }
+        long page = current <= 1 ? 1 : current;
+        long offset = (page - 1) * size;
+        if (isOracle(dialectName)) {
+            appendOraclePage(sb, offset, offset + size);
+            return;
+        }
+        appendLimit(sb, offset, size, page == 1);
+    }
+
+    private static boolean isOracle(String dialectName) {
+        return dialectName != null && ORACLE_DIALECT.equalsIgnoreCase(dialectName.trim());
+    }
+
+    /**
+     * 与 MyBatis-Plus OracleDialect 一致的 11g 写法:
+     * 内层 ROWNUM 限制结束行,外层过滤已跳过的行。
+     */
+    private static void appendOraclePage(StringBuilder sb, long offset, long endRow) {
+        String originalSql = sb.toString();
+        sb.setLength(0);
+        sb.append("SELECT * FROM ( SELECT TMP.*, ROWNUM ROW_ID FROM ( ")
+                .append(originalSql)
+                .append(" ) TMP WHERE ROWNUM <= ")
+                .append(endRow)
+                .append(") WHERE ROW_ID > ")
+                .append(offset);
+    }
+
+    private static void appendLimit(StringBuilder sb, long offset, long size, boolean firstPage) {
         sb.append(" LIMIT ");
-        if (current <= 1) {
+        if (firstPage) {
             sb.append(size);
         } else {
-            sb.append((current - 1) * size).append(", ").append(size);
+            sb.append(offset).append(", ").append(size);
         }
     }
 
