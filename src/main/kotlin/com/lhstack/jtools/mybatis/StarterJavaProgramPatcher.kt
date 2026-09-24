@@ -5,6 +5,7 @@ import com.intellij.execution.configurations.JavaParameters
 import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.execution.configurations.RunProfile
 import com.intellij.execution.runners.JavaProgramPatcher
+import com.intellij.openapi.extensions.Extensions
 import java.io.File
 import java.io.IOException
 import java.nio.charset.StandardCharsets
@@ -25,6 +26,36 @@ class StarterJavaProgramPatcher : JavaProgramPatcher() {
         private const val AGENT_RESOURCE = "META-INF/agent.jar"
         private const val AGENT_DIR = ".jtools/jtools-mybatis-log"
         private const val AGENT_FILE_NAME = "agent.jar"
+
+        private val javaProgramPatcher = StarterJavaProgramPatcher()
+
+        /**
+         * 由 jtools 宿主在安装本插件时调用。独立插件模式的 plugin.xml 扩展点不再使用。
+         */
+        fun registry() {
+            javaProgramPatcher.register()
+        }
+
+        fun unRegistry() {
+            javaProgramPatcher.unregister()
+        }
+    }
+
+    /**
+     * EP_NAME 在目标 SDK 中是 protected。companion 会编译成独立类,
+     * 不能直接访问父类受保护字段,因此注册必须发生在子类实例方法里。
+     */
+    internal fun register() {
+        val extensionPoint = Extensions.getRootArea().getExtensionPoint(EP_NAME)
+        // 宿主运行时的 ExtensionPoint 没有 hasExtension,只能遍历已注册实例。
+        if (extensionPoint.extensions.none { it === this }) {
+            extensionPoint.registerExtension(this)
+        }
+    }
+
+    internal fun unregister() {
+        val extensionPoint = Extensions.getRootArea().getExtensionPoint(EP_NAME)
+        extensionPoint.unregisterExtension(this)
     }
 
     private val agentDir: File
@@ -42,7 +73,30 @@ class StarterJavaProgramPatcher : JavaProgramPatcher() {
             return
         }
         val agent = prepareAgentJar(configuration) ?: return
+        addModuleOpens(javaParameters)
         javaParameters.vmParametersList.add(buildAgentArgument(agent, state))
+    }
+
+    /**
+     * JDK 9 及以上需要打开 agent 反射访问的模块,否则宿主应用在模块系统下无法启动。
+     */
+    private fun addModuleOpens(javaParameters: JavaParameters) {
+        if (javaVersion(javaParameters) < 9) {
+            return
+        }
+        javaParameters.vmParametersList.add("--add-opens=java.base/java.lang=ALL-UNNAMED")
+        javaParameters.vmParametersList.add("--add-opens=java.base/java.lang.reflect=ALL-UNNAMED")
+        javaParameters.vmParametersList.add("--add-opens=java.base/java.util=ALL-UNNAMED")
+    }
+
+    private fun javaVersion(javaParameters: JavaParameters): Int {
+        val versionString = javaParameters.jdk?.versionString ?: return 8
+        val version = versionString.replace(Regex("[^0-9.]"), "")
+        return when {
+            version.startsWith("1.8") -> 8
+            version.startsWith("1.") -> version.substringAfter("1.").substringBefore(".").toIntOrNull() ?: 8
+            else -> version.substringBefore(".").toIntOrNull() ?: 8
+        }
     }
 
     /**

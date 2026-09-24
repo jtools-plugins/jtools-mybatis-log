@@ -1,1 +1,1 @@
-com.jtools.mybatislog.PluginImpl
+com.lhstack.jtools.mybatis.PluginImpl

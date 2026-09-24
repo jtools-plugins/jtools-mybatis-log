@@ -16,16 +16,23 @@ import com.intellij.ui.ToolbarDecorator
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.ItemRemovable
-import org.jdesktop.swingx.HorizontalLayout
-import org.jdesktop.swingx.VerticalLayout
+import com.intellij.util.ui.JBUI
 import java.awt.BorderLayout
-import java.awt.FlowLayout
+import java.awt.Dimension
+import java.awt.GridBagConstraints
+import java.awt.GridBagLayout
 import java.awt.event.ItemEvent
 import java.io.StringReader
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
+import javax.swing.BorderFactory
+import javax.swing.Box
+import javax.swing.BoxLayout
 import javax.swing.JLabel
 import javax.swing.JPanel
+import javax.swing.JScrollPane
+import javax.swing.ScrollPaneConstants
+import javax.swing.UIManager
 import javax.swing.table.DefaultTableModel
 
 class SettingPanel(val project: Project, val tempProps: TempProps, val updated: (TempProps) -> Unit = {}) : JPanel(),
@@ -36,6 +43,9 @@ class SettingPanel(val project: Project, val tempProps: TempProps, val updated: 
     val colorPanel = ColorPanel().apply {
         this.setEditable(false)
         this.selectedColor = Const.colorMap[tempProps.ansiCode]
+        this.preferredSize = Dimension(72, 24)
+        this.minimumSize = preferredSize
+        this.maximumSize = preferredSize
     }
     val comboBox = ComboBox<String>(Const.ansiColorMap.keys.toTypedArray())
 
@@ -53,7 +63,7 @@ class SettingPanel(val project: Project, val tempProps: TempProps, val updated: 
             "TSql"
         )
     )
-    private val sqlFormatEnableCheckBox = JBCheckBox()
+    private val sqlFormatEnableCheckBox = JBCheckBox("格式化 SQL")
     /** 记录每种 SQL 类型是否需要从控制台日志中排除。 */
     private val excludeSqlTypeCheckBoxes = linkedMapOf(
         "SELECT" to JBCheckBox("SELECT"),
@@ -90,60 +100,53 @@ class SettingPanel(val project: Project, val tempProps: TempProps, val updated: 
             }
         }
 
-        this.layout = VerticalLayout()
-        this.add(JPanel(BorderLayout()).apply {
-            this.add(JLabel("开启Sql日志控制台输出: ", JLabel.LEFT), BorderLayout.WEST)
-            this.add(selectBox.apply {
-                this.isSelected = tempProps.enabled
-                this.addActionListener {
-                    tempProps.enabled = this.isSelected
-                    updated.invoke(tempProps)
-                }
-            }, BorderLayout.CENTER)
-        })
-        this.add(JPanel(BorderLayout()).apply {
-            this.add(JLabel("控制台日志颜色: ", JLabel.LEFT), BorderLayout.WEST)
-            this.add(JPanel(HorizontalLayout()).apply {
-                comboBox.selectedItem = tempProps.colorName
-                comboBox.addItemListener { e ->
-                    if (e.stateChange != ItemEvent.SELECTED) {
-                        return@addItemListener
-                    }
-                    val colorName = e.item as String
-                    val ansiCode = Const.ansiColorMap[colorName] ?: return@addItemListener
-                    tempProps.colorName = colorName
-                    tempProps.ansiCode = ansiCode
-                    colorPanel.selectedColor = Const.colorMap[ansiCode]
-                    updated.invoke(tempProps)
-                }
-                this.add(comboBox, BorderLayout.WEST)
-                this.add(colorPanel, BorderLayout.NORTH)
-            }, BorderLayout.CENTER)
-        })
+        layout = BorderLayout()
+        border = JBUI.Borders.empty()
 
-        // SQL Format Configuration
-        this.add(JPanel(BorderLayout()).apply {
-            this.add(JLabel("开启SQL格式化打印: ", JLabel.LEFT), BorderLayout.WEST)
-            this.add(sqlFormatEnableCheckBox, BorderLayout.CENTER)
-        })
-        this.add(JPanel(BorderLayout()).apply {
-            this.add(JLabel("SQL格式化类型: ", JLabel.LEFT), BorderLayout.WEST)
-            this.add(JPanel(FlowLayout(FlowLayout.LEFT, 0, 0)).apply {
-                this.add(sqlFormatComboBox)
-            }, BorderLayout.CENTER)
-        })
+        selectBox.apply {
+            text = "输出完整 SQL 和执行耗时"
+            isSelected = tempProps.enabled
+            addActionListener {
+                tempProps.enabled = isSelected
+                updated.invoke(tempProps)
+            }
+        }
+        comboBox.selectedItem = tempProps.colorName
+        comboBox.addItemListener { e ->
+            if (e.stateChange != ItemEvent.SELECTED) {
+                return@addItemListener
+            }
+            val colorName = e.item as String
+            val ansiCode = Const.ansiColorMap[colorName] ?: return@addItemListener
+            tempProps.colorName = colorName
+            tempProps.ansiCode = ansiCode
+            colorPanel.selectedColor = Const.colorMap[ansiCode]
+            updated.invoke(tempProps)
+        }
 
-        // 提供按 SELECT、INSERT、UPDATE、DELETE 类型过滤日志的复选框。
-        this.add(JPanel(BorderLayout()).apply {
-            this.add(JLabel("不输出的 SQL 类型: ", JLabel.LEFT), BorderLayout.WEST)
-            this.add(JPanel(FlowLayout(FlowLayout.LEFT, 0, 0)).apply {
-                excludeSqlTypeCheckBoxes.values.forEach { checkBox -> this.add(checkBox) }
-            }, BorderLayout.CENTER)
+        val content = JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.Y_AXIS)
+            border = JBUI.Borders.empty(12, 16, 16, 16)
+            alignmentX = LEFT_ALIGNMENT
+        }
+        content.add(section("输出", "控制是否打印以及日志颜色") {
+            add(optionRow("启用日志", selectBox))
+            add(optionRow("日志颜色", inline(comboBox, colorPanel)))
         })
+        content.add(Box.createVerticalStrut(12))
 
-        // Exclude Packages/Classes Table
-        this.add(JPanel(BorderLayout()).apply {
-            this.add(JLabel("排除包/类 (Exclude Packages/Classes): ", JLabel.LEFT), BorderLayout.NORTH)
+        content.add(section("格式化", "PlSql 对应 Oracle 语法，分页会输出 ROWNUM") {
+            add(optionRow("启用格式化", sqlFormatEnableCheckBox))
+            add(optionRow("SQL 方言", sqlFormatComboBox))
+        })
+        content.add(Box.createVerticalStrut(12))
+
+        content.add(section("过滤", "勾选后对应类型的 SQL 不输出") {
+            add(optionRow("排除类型", inline(*excludeSqlTypeCheckBoxes.values.toTypedArray())))
+        })
+        content.add(Box.createVerticalStrut(12))
+
+        content.add(section("排除范围", "匹配到的包或类不会生成 SQL 日志") {
             val decorator = ToolbarDecorator.createDecorator(excludeTable)
             decorator.setAddAction {
                 // Show popup to choose Package or Class
@@ -214,11 +217,85 @@ class SettingPanel(val project: Project, val tempProps: TempProps, val updated: 
                     saveConfig()
                 }
             }
-            this.add(decorator.createPanel(), BorderLayout.CENTER)
+            add(decorator.createPanel())
         })
 
-        // Load initial data
+        add(JScrollPane(content).apply {
+            border = JBUI.Borders.empty()
+            horizontalScrollBarPolicy = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+            verticalScrollBarPolicy = ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED
+            viewport.background = content.background
+        }, BorderLayout.CENTER)
+
         loadConfig()
+    }
+
+    private fun mutedColor(): java.awt.Color = UIManager.getColor("Label.disabledForeground") ?: java.awt.Color.GRAY
+
+    private fun section(title: String, description: String, content: JPanel.() -> Unit): JPanel {
+        val body = JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.Y_AXIS)
+            alignmentX = LEFT_ALIGNMENT
+            isOpaque = false
+            border = JBUI.Borders.empty(10, 12, 12, 12)
+            content()
+        }
+        return JPanel(BorderLayout()).apply {
+            alignmentX = LEFT_ALIGNMENT
+            maximumSize = Dimension(Int.MAX_VALUE, Int.MAX_VALUE)
+            border = BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(mutedColor()),
+                JBUI.Borders.empty()
+            )
+            add(JPanel(BorderLayout()).apply {
+                isOpaque = false
+                border = JBUI.Borders.empty(8, 12, 8, 12)
+                add(JLabel(title).apply {
+                    font = font.deriveFont(font.style or java.awt.Font.BOLD)
+                }, BorderLayout.WEST)
+                add(JLabel(description).apply {
+                    foreground = mutedColor()
+                    border = JBUI.Borders.emptyLeft(12)
+                }, BorderLayout.CENTER)
+            }, BorderLayout.NORTH)
+            add(body, BorderLayout.CENTER)
+        }
+    }
+
+    private fun optionRow(label: String, control: java.awt.Component): JPanel {
+        return JPanel(GridBagLayout()).apply {
+            alignmentX = LEFT_ALIGNMENT
+            maximumSize = Dimension(Int.MAX_VALUE, 32)
+            isOpaque = false
+            border = JBUI.Borders.empty(3, 0)
+            add(JLabel(label).apply {
+                preferredSize = Dimension(88, 24)
+            }, GridBagConstraints().apply {
+                gridx = 0
+                gridy = 0
+                anchor = GridBagConstraints.WEST
+            })
+            add(control, GridBagConstraints().apply {
+                gridx = 1
+                gridy = 0
+                weightx = 1.0
+                anchor = GridBagConstraints.WEST
+                fill = GridBagConstraints.NONE
+            })
+        }
+    }
+
+    private fun inline(vararg components: java.awt.Component): JPanel {
+        return JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.X_AXIS)
+            isOpaque = false
+            components.forEachIndexed { index, component ->
+                if (index > 0) {
+                    add(Box.createHorizontalStrut(12))
+                }
+                add(component)
+            }
+        }
     }
 
     private fun addExcludeItem(item: String?) {
