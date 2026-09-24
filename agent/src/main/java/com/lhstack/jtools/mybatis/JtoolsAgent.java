@@ -51,6 +51,8 @@ public class JtoolsAgent {
 
             final String ansiCode = argArray[0];
             final String excludePkgs = p.getProperty("excludePackages", "");
+            // 读取需要排除的 SQL 类型,未配置时保持原有的全量输出行为。
+            final String excludeSqlTypes = p.getProperty("excludeSqlTypes", "");
             final String sqlType = p.getProperty("sqlFormatType", "MySql");
             final boolean sqlFormatEnable = Boolean.parseBoolean(p.getProperty("sqlFormatEnable", "true"));
 
@@ -63,7 +65,7 @@ public class JtoolsAgent {
                     }
 
                     try {
-                        return enhance(loader, className, sqlType, ansiCode, excludePkgs, classfileBuffer);
+                        return enhance(loader, className, sqlType, ansiCode, excludePkgs, excludeSqlTypes, classfileBuffer);
                     } catch (Throwable e) {
                         System.err.println("[jtools-mybatis-log] Transform error for " + className + ": " + e.getMessage());
                         e.printStackTrace();
@@ -84,7 +86,8 @@ public class JtoolsAgent {
                 }
 
                 private byte[] enhance(ClassLoader loader, String className, String sqlType,
-                                        String ansiCode, String excludePackages, byte[] originalBytecode) {
+                                        String ansiCode, String excludePackages, String excludeSqlTypes,
+                                        byte[] originalBytecode) {
                     String classPath = className.replace("/", ".");
                     ClassPool pool = new ClassPool(true);
 
@@ -118,8 +121,8 @@ public class JtoolsAgent {
 
                                     CtMethod methodCopy = CtNewMethod.copy(method, "newExecutor", ctClass, new ClassMap());
                                     String body = String.format(
-                                            "{ return ($r)new com.lhstack.jtools.mybatis.ExecutorWrapper($0, %s($$), \"%s\", \"%s\", \"%s\", %s); }",
-                                            agentMethodName, sqlType, ansiCode, excludePackages, sqlFormatEnable
+                                            "{ return ($r)new com.lhstack.jtools.mybatis.ExecutorWrapper($0, %s($$), \"%s\", \"%s\", \"%s\", %s, \"%s\"); }",
+                                            agentMethodName, sqlType, ansiCode, excludePackages, sqlFormatEnable, excludeSqlTypes
                                     );
                                     methodCopy.setBody(body);
                                     ctClass.addMethod(methodCopy);

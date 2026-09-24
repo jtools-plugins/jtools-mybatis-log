@@ -3,6 +3,7 @@ package com.lhstack.jtools.mybatis.it.mapper;
 import com.lhstack.jtools.mybatis.it.entity.User;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Delete;
 
 import java.util.Date;
 import java.util.List;
@@ -33,4 +34,8 @@ public interface RawUserMapper {
 
     @Select("SELECT count(1) FROM t_user WHERE (#{createTime} IS NULL OR #{createTime} > now())")
     int countByTime(@Param("createTime") Date createTime);
+
+    /** 删除一条记录,用于验证 SQL 类型黑名单不会输出 DELETE 日志。 */
+    @Delete("DELETE FROM t_user WHERE id = #{id}")
+    int deleteById(@Param("id") long id);
 }

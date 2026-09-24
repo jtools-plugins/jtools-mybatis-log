@@ -9,6 +9,7 @@ import org.apache.ibatis.logging.Log;
 import org.apache.ibatis.logging.LogFactory;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
+import org.apache.ibatis.mapping.SqlCommandType;
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.ResultHandler;
@@ -19,6 +20,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * 包装真实 Executor,在委托执行前后回填参数并打印完整 SQL。
@@ -39,14 +41,20 @@ public class ExecutorWrapper implements Executor {
     private final boolean sqlFormatEnable;
     private final AntPathMatcher matcher = new AntPathMatcher();
     private final List<String> excludePackages;
+    private final List<SqlCommandType> excludeSqlTypes;
 
-    public ExecutorWrapper(Configuration configuration, Executor result, String sqlFormatType, String ansiCode, String excludePackages, boolean sqlFormatEnable) {
+    /**
+     * 创建 Executor 包装器并初始化 SQL 格式化、包排除和 SQL 类型排除配置。
+     */
+    public ExecutorWrapper(Configuration configuration, Executor result, String sqlFormatType, String ansiCode,
+                           String excludePackages, boolean sqlFormatEnable, String excludeSqlTypes) {
         this.executor = result;
         this.configuration = configuration;
         this.sqlFormatType = sqlFormatType;
         this.ansiCode = ansiCode;
         this.sqlFormatEnable = sqlFormatEnable;
         this.excludePackages = parseExcludePackages(excludePackages);
+        this.excludeSqlTypes = parseExcludeSqlTypes(excludeSqlTypes);
     }
 
     private static List<String> parseExcludePackages(String excludePackages) {
@@ -61,6 +69,32 @@ public class ExecutorWrapper implements Executor {
             }
         }
         return Collections.unmodifiableList(patterns);
+    }
+
+    /**
+     * 解析配置文件中的 SQL 类型黑名单,只接受 MyBatis 支持的四类实际 SQL 操作。
+     */
+    private static List<SqlCommandType> parseExcludeSqlTypes(String excludeSqlTypes) {
+        if (excludeSqlTypes == null || excludeSqlTypes.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<SqlCommandType> types = new ArrayList<SqlCommandType>();
+        for (String type : excludeSqlTypes.split(",")) {
+            String normalized = type.trim().toUpperCase(Locale.ROOT);
+            if (normalized.isEmpty()) {
+                continue;
+            }
+            try {
+                SqlCommandType commandType = SqlCommandType.valueOf(normalized);
+                if (commandType != SqlCommandType.FLUSH && commandType != SqlCommandType.UNKNOWN
+                        && !types.contains(commandType)) {
+                    types.add(commandType);
+                }
+            } catch (IllegalArgumentException ignored) {
+                // 手工编辑配置时忽略未知类型,避免因单个错误值影响目标应用启动。
+            }
+        }
+        return Collections.unmodifiableList(types);
     }
 
     // region SQL 生成
@@ -134,6 +168,13 @@ public class ExecutorWrapper implements Executor {
         return false;
     }
 
+    /**
+     * 判断 MappedStatement 的 SQL 命令类型是否在用户配置的排除列表中。
+     */
+    private boolean isExcludedSqlType(MappedStatement statement) {
+        return statement != null && excludeSqlTypes.contains(statement.getSqlCommandType());
+    }
+
     private void log(String id, String sql, long time) {
         LOGGER.warn(id + "\r\n\u001B[" + ansiCode + "m" + sql + ANSI_RESET + "\r\n执行耗时: " + time + "ms");
     }
@@ -146,7 +187,7 @@ public class ExecutorWrapper implements Executor {
      * 嵌套包装时只透传: 外层已经打印过同一条语句。
      */
     private boolean shouldSkipLogging(MappedStatement ms) {
-        return executor instanceof ExecutorWrapper || isExcluded(ms.getId());
+        return executor instanceof ExecutorWrapper || isExcluded(ms.getId()) || isExcludedSqlType(ms);
     }
 
     @Override

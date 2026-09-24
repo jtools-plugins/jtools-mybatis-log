@@ -65,6 +65,8 @@ class JToolsMybatisLogConfigurable(val project: Project) : Configurable {
         } catch (e: Exception) {
             throw ConfigurationException("保存配置文件失败: ${pluginState.getJsonConfigPath()}, ${e.message}")
         }
+        // 配置文件成功写入后提醒用户重启正在运行的程序。
+        Notifier.info(project, "JTools Mybatis Log 配置已保存  ，已运行的程序请重新运行，让配置生效")
     }
 
     override fun reset() {

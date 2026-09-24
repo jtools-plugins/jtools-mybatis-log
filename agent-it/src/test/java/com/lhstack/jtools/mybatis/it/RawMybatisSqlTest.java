@@ -99,4 +99,18 @@ class RawMybatisSqlTest extends ItBase {
                 "被排除的 mapper 仍打印了 SQL:\n" + LogRecords.dump());
         assertNotNull(LogRecords.lastSqlOf("findByName"), "未排除的 mapper 应正常打印");
     }
+
+    @Test
+    @DisplayName("配置排除 DELETE 时不打印删除 SQL")
+    void excludedSqlTypePrintsNothing() {
+        try (SqlSession session = sqlSessionFactory.openSession()) {
+            int affectedRows = session.getMapper(RawUserMapper.class).deleteById(4L);
+            session.commit();
+            assertEquals(1, affectedRows, "DELETE 应正常执行");
+        }
+        assertNoAgentError();
+
+        assertEquals(null, LogRecords.lastSqlOf("deleteById"),
+                "配置排除 DELETE 后不应产生 SQL 日志:\n" + LogRecords.dump());
+    }
 }

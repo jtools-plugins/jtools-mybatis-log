@@ -54,6 +54,13 @@ class SettingPanel(val project: Project, val tempProps: TempProps, val updated: 
         )
     )
     private val sqlFormatEnableCheckBox = JBCheckBox()
+    /** 记录每种 SQL 类型是否需要从控制台日志中排除。 */
+    private val excludeSqlTypeCheckBoxes = linkedMapOf(
+        "SELECT" to JBCheckBox("SELECT"),
+        "INSERT" to JBCheckBox("INSERT"),
+        "UPDATE" to JBCheckBox("UPDATE"),
+        "DELETE" to JBCheckBox("DELETE")
+    )
     private val excludeTableModel = object : DefaultTableModel(arrayOf("排除的包/类"), 0), ItemRemovable {
         override fun isCellEditable(row: Int, column: Int): Boolean {
             return false
@@ -72,6 +79,14 @@ class SettingPanel(val project: Project, val tempProps: TempProps, val updated: 
             if (change.get()) {
                 sqlFormatComboBox.isEnabled = sqlFormatEnableCheckBox.isSelected
                 saveConfig()
+            }
+        }
+        // SQL 类型过滤选项变化后立即同步到临时配置,Apply 时由设置页统一写入文件。
+        excludeSqlTypeCheckBoxes.values.forEach { checkBox ->
+            checkBox.addActionListener {
+                if (change.get()) {
+                    saveConfig()
+                }
             }
         }
 
@@ -115,6 +130,14 @@ class SettingPanel(val project: Project, val tempProps: TempProps, val updated: 
             this.add(JLabel("SQL格式化类型: ", JLabel.LEFT), BorderLayout.WEST)
             this.add(JPanel(FlowLayout(FlowLayout.LEFT, 0, 0)).apply {
                 this.add(sqlFormatComboBox)
+            }, BorderLayout.CENTER)
+        })
+
+        // 提供按 SELECT、INSERT、UPDATE、DELETE 类型过滤日志的复选框。
+        this.add(JPanel(BorderLayout()).apply {
+            this.add(JLabel("不输出的 SQL 类型: ", JLabel.LEFT), BorderLayout.WEST)
+            this.add(JPanel(FlowLayout(FlowLayout.LEFT, 0, 0)).apply {
+                excludeSqlTypeCheckBoxes.values.forEach { checkBox -> this.add(checkBox) }
             }, BorderLayout.CENTER)
         })
 
@@ -237,6 +260,16 @@ class SettingPanel(val project: Project, val tempProps: TempProps, val updated: 
             sqlFormatEnableCheckBox.isSelected = sqlFormatEnable
             sqlFormatComboBox.isEnabled = sqlFormatEnable
 
+            // 根据配置文件恢复需要排除的 SQL 类型,未知类型不会影响界面加载。
+            val excludeSqlTypes = props.getProperty("excludeSqlTypes", "")
+                .split(",")
+                .map { it.trim().uppercase(Locale.ROOT) }
+                .filter { it.isNotEmpty() }
+                .toSet()
+            excludeSqlTypeCheckBoxes.forEach { (sqlType, checkBox) ->
+                checkBox.isSelected = sqlType in excludeSqlTypes
+            }
+
         } catch (e: Exception) {
             Notifier.warn(project, "解析配置内容失败,已按默认值展示: ${e.message}")
         } finally {
@@ -267,6 +300,13 @@ class SettingPanel(val project: Project, val tempProps: TempProps, val updated: 
             // Update sqlFormatType
             props.setProperty("sqlFormatType", sqlFormatComboBox.selectedItem as String)
             props.setProperty("sqlFormatEnable", sqlFormatEnableCheckBox.isSelected.toString())
+
+            // 仅保存界面支持的 SQL 类型,并使用统一的大写格式供 Agent 解析。
+            val excludeSqlTypes = excludeSqlTypeCheckBoxes
+                .filterValues { it.isSelected }
+                .keys
+                .joinToString(",")
+            props.setProperty("excludeSqlTypes", excludeSqlTypes)
 
             tempProps.configJsonValue = renderProperties(props)
             updated(tempProps)

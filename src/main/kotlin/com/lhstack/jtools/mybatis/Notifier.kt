@@ -19,6 +19,11 @@ object Notifier {
         notify(project, content, NotificationType.WARNING)
     }
 
+    /** 向用户显示普通信息通知。 */
+    fun info(project: Project, content: String) {
+        notify(project, content, NotificationType.INFORMATION)
+    }
+
     private fun notify(project: Project, content: String, type: NotificationType) {
         Notifications.Bus.notify(Notification(GROUP_ID, "JTools Mybatis Log", content, type), project)
     }
